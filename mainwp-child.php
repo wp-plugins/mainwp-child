@@ -2,7 +2,7 @@
 /*
   Plugin Name: MainWP Child
   Plugin URI: http://mainwp.com/
-  Description: Child Plugin for MainWP. The plugin is used so the installed blog can be securely managed remotely by your network.  This plugin has no onsite configuration just activate and return to the Main Plugin site.
+  Description: Child Plugin for MainWP. The plugin is used so the installed blog can be securely managed remotely by your network. Plugin documentation and options can be found here http://docs.mainwp.com
   Author: MainWP
   Author URI: http://mainwp.com
   Version: 0.1

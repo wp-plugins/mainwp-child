@@ -44,14 +44,14 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 
 1. The Dashboard Screen
 2. The Posts Screen
-3. The Pages Screen
+3. The Comments Screen
 4. The Sites Screen
 5. The Plugins Screen
 6. The Themes Screen
-7. The Users Screen
-8. The Groups Screen
-9. The Offline Checks Screen
-10. The Backups Screen
+7. The Groups Screen
+8. The Offline Checks Screen
+9. The Clone Screen
+10. The Extension Screen
 
 == Changelog ==
 

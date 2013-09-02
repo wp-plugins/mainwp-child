@@ -19,6 +19,7 @@ class MainWPChild
         'cloneinfo' => 'cloneinfo',
         'security' => 'getSecurityStats',
         'securityFix' => 'doSecurityFix',
+        'securityUnFix' => 'doSecurityUnFix',
         'post_action' => 'post_action',
         'get_all_posts' => 'get_all_posts',
         'comment_action' => 'comment_action',
@@ -224,26 +225,37 @@ class MainWPChild
                 $rules = $this->mod_rewrite_rules(array('wp-content/plugins/' . $snPluginDir . '/(.*)$' => 'wp-content/plugins/THIS_PLUGIN_DOES_NOT_EXIST'));
             }
 
-            $home_path = get_home_path();
+            $home_path = ABSPATH;
             $htaccess_file = $home_path . '.htaccess';
             if (function_exists('save_mod_rewrite_rules'))
             {
                 $rules = explode("\n", $rules);
                 insert_with_markers($htaccess_file, 'MainWP', $rules);
-            }
 
+                if (get_option('mainwp_child_onetime_htaccess') === false)
+                {
+                    insert_with_markers($htaccess_file, 'SickNetwork', array());
+                    update_option('mainwp_child_onetime_htaccess', true);
+                }
+            }
             update_option('mainwp_child_htaccess_set', 'yes');
         }
         else if ($hard)
         {
             include_once(ABSPATH . '/wp-admin/includes/misc.php');
 
-            $home_path = get_home_path();
+            $home_path = ABSPATH;
             $htaccess_file = $home_path . '.htaccess';
             if (function_exists('save_mod_rewrite_rules'))
             {
                 $rules = explode("\n", '');
                 insert_with_markers($htaccess_file, 'MainWP', $rules);
+
+                if (get_option('mainwp_child_onetime_htaccess') === false)
+                {
+                    insert_with_markers($htaccess_file, 'SickNetwork', array());
+                    update_option('mainwp_child_onetime_htaccess', true);
+                }
             }
         }
     }
@@ -351,23 +363,11 @@ class MainWPChild
 
         if (isset($_GET['test']))
         {
-            error_reporting(E_ALL);
-            ini_set('display_errors', TRUE);
-            ini_set('display_startup_errors', TRUE);
-            echo '<pre>';
-            $excludes = (isset($_POST['exclude']) ? explode(',', $_POST['exclude']) : array());
-            $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/uploads/mainwp';
-            $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/object-cache.php';
-            if (!ini_get('safe_mode')) set_time_limit(600);
-
-            $newExcludes = array();
-            foreach ($excludes as $exclude)
-            {
-                $newExcludes[] = rtrim($exclude, '/');
-            }
-
-            $res = MainWPBackup::get()->createFullBackup($newExcludes);
-            die('</pre>');
+            //error_reporting(E_ALL);
+            //ini_set('display_errors', TRUE);
+            //ini_set('display_startup_errors', TRUE);
+            //echo '<pre>';
+            //die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -493,6 +493,7 @@ class MainWPChild
         include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
         $urlgot = json_decode(stripslashes($_POST['url']));
+
         $urls = array();
         if (!is_array($urlgot))
         {
@@ -1227,6 +1228,44 @@ class MainWPChild
         MainWPHelper::write($information);
     }
 
+    function doSecurityUnFix()
+    {
+        $information = array();
+        
+        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'wp_version')
+        {
+            update_option('mainwp_child_remove_wp_version', 'F');
+            $information['wp_version'] = 'N';
+        }
+
+        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'rsd')
+        {
+            update_option('mainwp_child_remove_rsd', 'F');
+            $information['rsd'] = 'N';
+        }
+
+        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'wlw')
+        {
+            update_option('mainwp_child_remove_wlw', 'F');
+            $information['wlw'] = 'N';
+        }
+
+        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'php_reporting')
+        {
+            update_option('mainwp_child_remove_php_reporting', 'F');
+            $information['php_reporting'] = 'N';
+        }
+
+        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'versions')
+        {
+            update_option('mainwp_child_remove_scripts_version', 'F');
+            update_option('mainwp_child_remove_styles_version', 'F');
+            $information['versions'] = 'N';
+        }
+
+        MainWPHelper::write($information);
+    }
+
     function getSecurityStats()
     {
         $information = array();
@@ -1251,6 +1290,11 @@ class MainWPChild
     function updateExternalSettings()
     {
         $update_htaccess = false;
+
+        if (get_option('mainwp_child_onetime_htaccess') === false)
+        {
+            $update_htaccess = true;
+        }
 
         if (isset($_POST['heatMap']))
         {

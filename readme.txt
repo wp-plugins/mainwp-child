@@ -55,5 +55,8 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 
 == Changelog ==
 
+= 0.2 =
+Added unfix option for security issues
+
 = 0.1 =
 Initial version

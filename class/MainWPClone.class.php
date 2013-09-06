@@ -279,7 +279,7 @@ class MainWPClone
                 url: pUrl
             };
 
-            jQuery.post(ajaxurl, data, function(resp) {
+            jQuery.post(ajaxurl, data, function(siteId) { return function(resp) {
                 backupDownloadFinished = true;
                 clearTimeout(pollingDownloading);
 
@@ -295,7 +295,7 @@ class MainWPClone
 
                 //update view;
                 cloneInitiateExtractBackup();
-            }, 'json');
+            }}(pSiteId), 'json');
 
             //Poll for filesize 'till it's complete
             pollingDownloading = setTimeout(function() { cloneBackupDownloadPolling(pSiteId, pUrl); }, 1000);
@@ -580,8 +580,6 @@ class MainWPClone
 
             $siteToClone = $sitesToClone[$siteId];
             $url = $siteToClone['url'];
-            if (substr($url, -1) != '/') { $url .= '/'; }
-            $url .= 'wp-admin/';
 
             $key = $siteToClone['extauth'];
 
@@ -591,6 +589,10 @@ class MainWPClone
             $result = MainWPHelper::fetchUrl($url, array('cloneFunc' => 'createCloneBackup', 'key' => $key, 'file' => $rand, 'wpversion' => $wp_version));
 
             if (!$result['backup']) throw new Exception('Could not create backupfile on child');
+            session_start();
+
+            update_option('mainwp_temp_clone_plugins', $result['plugins']);
+            update_option('mainwp_temp_clone_themes', $result['themes']);
 
             $output = array('url' => $result['backup'], 'size' => round($result['size'] / 1024, 0));
         }
@@ -615,11 +617,6 @@ class MainWPClone
 
             $siteToClone = $sitesToClone[$siteId];
             $url = $siteToClone['url'];
-            if (substr($url, -1) != '/')
-            {
-                $url .= '/';
-            }
-            $url .= 'wp-admin/';
 
             $key = $siteToClone['extauth'];
 
@@ -679,6 +676,23 @@ class MainWPClone
            	}
 
             $output = array('done' => $filename);
+
+            //Delete backup on child
+            try
+            {
+                $siteId = $_POST['siteId'];
+                $sitesToClone = get_option('mainwp_child_clone_sites');
+                if (is_array($sitesToClone) && isset($sitesToClone[$siteId]))
+                {
+                    $siteToClone = $sitesToClone[$siteId];
+
+                    MainWPHelper::fetchUrl($siteToClone['url'], array('cloneFunc' => 'deleteCloneBackup', 'key' => $siteToClone['extauth'], 'file' => basename($url)));
+                }
+            }
+            catch (Exception $e)
+            {
+                throw $e;
+            }
         }
         catch (Exception $e)
         {
@@ -714,6 +728,9 @@ class MainWPClone
         try
         {
             MainWPHelper::endSession();
+
+            $plugins = get_option('mainwp_temp_clone_plugins');
+            $themes = get_option('mainwp_temp_clone_themes');
 
             $file = $_POST['file'];
             $testFull = false;
@@ -763,6 +780,47 @@ class MainWPClone
             update_option('mainwp_child_clone_sites', $sitesToClone);
             update_option('mainwp_child_clone_permalink', true);
 
+            $cloneInstall->clean();
+
+            if ($plugins !== false)
+            {
+                $out = array();
+                if (is_array($plugins))
+                {
+                    $dir = WP_CONTENT_DIR . '/plugins/';
+                    $fh = @opendir($dir);
+                    while ($entry = @readdir($fh))
+                    {
+                        if (!is_dir($dir . $entry)) continue;
+                        if (($entry == '.') || ($entry == '..')) continue;
+
+                        if (!in_array($entry, $plugins)) MainWPHelper::delete_dir($dir . $entry);
+                    }
+                    @closedir($fh);
+                }
+
+                delete_option('mainwp_temp_clone_plugins');
+            }
+
+            if ($themes !== false)
+            {
+                $out = array();
+                if (is_array($themes))
+                {
+                    $dir = WP_CONTENT_DIR . '/themes/';
+                    $fh = @opendir($dir);
+                    while ($entry = @readdir($fh))
+                    {
+                        if (!is_dir($dir . $entry)) continue;
+                        if (($entry == '.') || ($entry == '..')) continue;
+
+                        if (!in_array($entry, $themes)) MainWPHelper::delete_dir($dir . $entry);
+                    }
+                    @closedir($fh);
+                }
+
+                delete_option('mainwp_temp_clone_themes');
+            }
             $output = array('result' => 'ok');
 
             wp_logout();

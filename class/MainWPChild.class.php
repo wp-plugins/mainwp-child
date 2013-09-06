@@ -268,7 +268,17 @@ class MainWPChild
             if (!isset($_POST['file']) || ($_POST['file'] == '')) return;
             if (!$this->isValidAuth($_POST['key'])) return;
 
-            if ($_POST['cloneFunc'] == 'createCloneBackupPoll')
+            if ($_POST['cloneFunc'] == 'deleteCloneBackup')
+            {
+                $dirs = MainWPHelper::getMainWPDir('backup');
+                $backupdir = $dirs[0];
+                $result = glob($backupdir . $_POST['file']);
+                if (count($result) == 0) return;
+
+                @unlink($result[0]);
+                MainWPHelper::write(array('result' => 'ok'));
+            }
+            else if ($_POST['cloneFunc'] == 'createCloneBackupPoll')
             {
                 $dirs = MainWPHelper::getMainWPDir('backup');
                 $backupdir = $dirs[0];
@@ -280,6 +290,10 @@ class MainWPChild
             else if ($_POST['cloneFunc'] == 'createCloneBackup')
             {
                 MainWPHelper::endSession();
+                if (file_exists(WP_CONTENT_DIR . '/dbBackup.sql')) @unlink(WP_CONTENT_DIR . '/dbBackup.sql');
+                if (file_exists(ABSPATH . 'clone/config.txt')) @unlink(ABSPATH . 'clone/config.txt');
+                if (MainWPHelper::is_dir_empty(ABSPATH . 'clone')) @rmdir(ABSPATH . 'clone');
+
                 $wpversion = $_POST['wpversion'];
                 global $wp_version;
                 $includeCoreFiles = ($wpversion != $wp_version);
@@ -304,6 +318,30 @@ class MainWPChild
                     $information['backup'] = $res['file'];
                     $information['size'] = $res['filesize'];
                 }
+
+                $plugins = array();
+                $dir = WP_CONTENT_DIR . '/plugins/';
+                $fh = @opendir($dir);
+                while ($entry = @readdir($fh))
+                {
+                    if (!is_dir($dir . $entry)) continue;
+                    if (($entry == '.') || ($entry == '..')) continue;
+                    $plugins[] = $entry;
+                }
+                @closedir($fh);
+                $information['plugins'] = $plugins;
+
+                $themes = array();
+                $dir = WP_CONTENT_DIR . '/themes/';
+                $fh = @opendir($dir);
+                while ($entry = @readdir($fh))
+                {
+                    if (!is_dir($dir . $entry)) continue;
+                    if (($entry == '.') || ($entry == '..')) continue;
+                    $themes[] = $entry;
+                }
+                @closedir($fh);
+                $information['themes'] = $themes;
 
                 MainWPHelper::write($information);
             }
@@ -366,8 +404,9 @@ class MainWPChild
             //error_reporting(E_ALL);
             //ini_set('display_errors', TRUE);
             //ini_set('display_startup_errors', TRUE);
-            //echo '<pre>';
-            //die('</pre>');
+            echo '<pre>';
+            echo print_r(get_option('mainwp_temp_clone_plugins'), 1);
+            die('</pre>');
         }
 
         //Register does not require auth, so we register here..

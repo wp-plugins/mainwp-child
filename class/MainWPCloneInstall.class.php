@@ -133,6 +133,22 @@ class MainWPCloneInstall
         if (!$db_selected) throw new Exception('Invalid database name');
     }
 
+    public function clean()
+    {
+        if (file_exists(WP_CONTENT_DIR . '/dbBackup.sql')) @unlink(WP_CONTENT_DIR . '/dbBackup.sql');
+        if (file_exists(ABSPATH . 'clone/config.txt')) @unlink(ABSPATH . 'clone/config.txt');
+        if (MainWPHelper::is_dir_empty(ABSPATH . 'clone')) @rmdir(ABSPATH . 'clone');
+
+        $dirs = MainWPHelper::getMainWPDir('backup');
+        $backupdir = $dirs[0];
+
+        $files = glob($backupdir . '*.zip');
+        foreach ($files as $file)
+        {
+            @unlink($file);
+        }
+    }
+
     /**
      * Run the installation
      *

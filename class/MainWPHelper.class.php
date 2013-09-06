@@ -313,7 +313,29 @@ class MainWPHelper
         ob_end_flush();
     }
 
-    public static function fetchUrl($url, $postdata)
+    static function fetchUrl($url, $postdata)
+    {
+        try
+        {
+            $tmpUrl = $url;
+            if (substr($tmpUrl, -1) != '/') { $tmpUrl .= '/'; }
+
+            return self::_fetchUrl($tmpUrl . 'wp-admin/', $postdata);
+        }
+        catch (Exception $e)
+        {
+            try
+            {
+                return self::_fetchUrl($url, $postdata);
+            }
+            catch (Exception $ex)
+            {
+                throw $e;
+            }
+        }
+    }
+
+    public static function _fetchUrl($url, $postdata)
     {
         $agent= 'Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)';
 
@@ -379,6 +401,29 @@ class MainWPHelper
         $size = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
         $factor = floor((strlen($bytes) - 1) / 3);
         return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$size[$factor];
+    }
+
+    public static function is_dir_empty($dir)
+    {
+      if (!is_readable($dir)) return null;
+      return (count(scandir($dir)) == 2);
+    }
+
+    public static function delete_dir( $dir ) {
+        $nodes = glob($dir . '*');
+
+        foreach ($nodes as $node)
+        {
+            if (is_dir($node))
+            {
+                self::delete_dir($node . DIRECTORY_SEPARATOR);
+            }
+            else
+            {
+                @unlink($node);
+            }
+        }
+        @rmdir($dir);
     }
 }
 

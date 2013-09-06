@@ -275,23 +275,6 @@ class MainWPBackup
         }
     }
 
-    function delete_dir( $dir ) {
-        $nodes = glob($dir . '*');
-
-        foreach ($nodes as $node)
-        {
-            if (is_dir($node))
-            {
-                $this->delete_dir($node . DIRECTORY_SEPARATOR);
-            }
-            else
-            {
-                @unlink($node);
-            }
-        }
-        @rmdir($dir);
-    }
-
     public function createZipPclFullBackup2($filepath, $excludes, $addConfig, $includeCoreFiles)
     {
         global $classDir;
@@ -339,7 +322,7 @@ class MainWPBackup
             $this->addFileFromStringToPCLZip('clone/config.txt', $string, $filepath);
         }
         //Remove backup folder
-        $this->delete_dir($backupFolder);
+        MainWPHelper::delete_dir($backupFolder);
         return true;
     }
 
@@ -514,7 +497,7 @@ class MainWPBackup
 
                 $inserted = false;
                 $add_insert = '';
-                while (($row = @mysql_fetch_array($rows, MYSQL_ASSOC)))
+                while ($row = @mysql_fetch_array($rows, MYSQL_ASSOC))
                 {
                     //Create new insert!
                     $add_insert = '(';
@@ -522,6 +505,8 @@ class MainWPBackup
                     foreach ($row as $value)
                     {
                         $add_insert_each .= "'" . str_replace(array("\n", "\r", "'"), array('\n', '\r', "\'"), $value) . "',";
+
+//                        $add_insert_each .= "'" . (stristr($value, "'") ? @mysql_real_escape_string($value, $wpdb->dbh) : $value) . "',";
                     }
                     $add_insert .= trim($add_insert_each, ',') . ')';
 

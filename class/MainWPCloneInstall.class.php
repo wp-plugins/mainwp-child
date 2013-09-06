@@ -188,9 +188,9 @@ class MainWPCloneInstall
                         $query = str_replace($this->config['home'], $home, $query);
                         $query = str_replace($this->config['siteurl'], $site_url, $query);
                         $query = str_replace($this->config['abspath'], ABSPATH, $query);
-                        $query = str_replace('\"', '\\\"', $query);
-                        $query = str_replace("\\\\'", "\\'", $query);
-                        $query = str_replace('\r\n', '\\\r\\\n', $query);
+//                        $query = str_replace('\"', '\\\"', $query);
+//                        $query = str_replace("\\\\'", "\\'", $query);
+//                        $query = str_replace('\r\n', '\\\r\\\n', $query);
 
                         if ($wpdb->query($query) === false) throw new Exception('Error importing database');
                     }
@@ -213,9 +213,9 @@ class MainWPCloneInstall
 
                 $query = str_replace($this->config['home'], $home, $query);
                 $query = str_replace($this->config['siteurl'], $site_url, $query);
-                $query = str_replace('\"', '\\\"', $query);
-                $query = str_replace("\\\\'", "\\'", $query);
-                $query = str_replace('\r\n', '\\\r\\\n', $query);
+//                $query = str_replace('\"', '\\\"', $query);
+//                $query = str_replace("\\\\'", "\\'", $query);
+//                $query = str_replace('\r\n', '\\\r\\\n', $query);
                 if ($wpdb->query($query) === false) throw new Exception('Error importing database');
             }
 

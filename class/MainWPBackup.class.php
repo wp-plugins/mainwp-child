@@ -504,9 +504,12 @@ class MainWPBackup
                     $add_insert_each = '';
                     foreach ($row as $value)
                     {
-                        $add_insert_each .= "'" . str_replace(array("\n", "\r", "'"), array('\n', '\r', "\'"), $value) . "',";
+                        //$add_insert_each .= "'" . str_replace(array("\n", "\r", "'"), array('\n', '\r', "\'"), $value) . "',";
 
-//                        $add_insert_each .= "'" . (stristr($value, "'") ? @mysql_real_escape_string($value, $wpdb->dbh) : $value) . "',";
+                        $value = addslashes($value);
+                        $value = ereg_replace("\n","\\n",$value);
+                        $value = ereg_replace("\r","\\r",$value);
+                        $add_insert_each.= '"'.$value.'",' ;
                     }
                     $add_insert .= trim($add_insert_each, ',') . ')';
 

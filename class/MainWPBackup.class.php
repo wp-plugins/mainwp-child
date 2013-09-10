@@ -160,8 +160,9 @@ class MainWPBackup
 
             if ($addConfig)
             {
+                global $wpdb;
                 $string = base64_encode(serialize(array('siteurl' => get_option('siteurl'),
-                                                'home' => get_option('home'), 'abspath' => ABSPATH)));
+                                                'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix)));
 
                 $this->addFileFromStringToZip('clone/config.txt', $string);
             }
@@ -239,8 +240,9 @@ class MainWPBackup
 
         if ($addConfig)
         {
+            global $wpdb;
             $string = base64_encode(serialize(array('siteurl' => get_option('siteurl'),
-                                            'home' => get_option('home'), 'abspath' => ABSPATH)));
+                                            'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix)));
 
             $this->addFileFromStringToPCLZip('clone/config.txt', $string, $filepath);
         }
@@ -316,8 +318,9 @@ class MainWPBackup
         $this->zip->create($backupFolder, PCLZIP_OPT_REMOVE_PATH, $backupFolder);
         if ($addConfig)
         {
+            global $wpdb;
             $string = base64_encode(serialize(array('siteurl' => get_option('siteurl'),
-                                            'home' => get_option('home'), 'abspath' => ABSPATH)));
+                                            'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix)));
 
             $this->addFileFromStringToPCLZip('clone/config.txt', $string, $filepath);
         }

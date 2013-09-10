@@ -770,15 +770,16 @@ class MainWPClone
             $sitesToClone = get_option('mainwp_child_clone_sites');
 
             $cloneInstall->install();
+            $cloneInstall->updateWPConfig();
 
-            update_option('mainwp_child_pubkey', $pubkey);
-            update_option('mainwp_child_uniqueId', $uniqueId);
-            update_option('mainwp_child_server', $server);
-            update_option('mainwp_child_nonce', $nonce);
-            update_option('mainwp_child_nossl', $nossl);
-            update_option('mainwp_child_nossl_key', $nossl_key);
-            update_option('mainwp_child_clone_sites', $sitesToClone);
-            update_option('mainwp_child_clone_permalink', true);
+            $cloneInstall->update_option('mainwp_child_pubkey', $pubkey);
+            $cloneInstall->update_option('mainwp_child_uniqueId', $uniqueId);
+            $cloneInstall->update_option('mainwp_child_server', $server);
+            $cloneInstall->update_option('mainwp_child_nonce', $nonce);
+            $cloneInstall->update_option('mainwp_child_nossl', $nossl);
+            $cloneInstall->update_option('mainwp_child_nossl_key', $nossl_key);
+            $cloneInstall->update_option('mainwp_child_clone_sites', $sitesToClone);
+            $cloneInstall->update_option('mainwp_child_clone_permalink', true);
 
             $cloneInstall->clean();
 
@@ -822,6 +823,8 @@ class MainWPClone
                 delete_option('mainwp_temp_clone_themes');
             }
             $output = array('result' => 'ok');
+
+            //todo: remove old tables if other prefix?
 
             wp_logout();
             wp_set_current_user(0);

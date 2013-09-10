@@ -149,6 +149,28 @@ class MainWPCloneInstall
         }
     }
 
+    public function updateWPConfig()
+    {
+        $wpConfig = file_get_contents(ABSPATH . 'wp-config.php');
+        $wpConfig = $this->replaceVar('table_prefix', $this->config['prefix'], $wpConfig);
+        file_put_contents(ABSPATH . 'wp-config.php', $wpConfig);
+    }
+
+    public function update_option($name, $value)
+    {
+        global $wpdb;
+
+        $var = $wpdb->get_var('SELECT option_value FROM '.$this->config['prefix'].'options WHERE option_name = "'.$name.'"');
+        if ($var == NULL)
+        {
+            $wpdb->query('INSERT INTO '.$this->config['prefix'].'options (`option_name`, `option_value`) VALUES ("'.$name.'", "'.maybe_serialize($value).'")');
+        }
+        else
+        {
+            $wpdb->query('UPDATE '.$this->config['prefix'].'options SET option_value = "'.maybe_serialize($value).'" WHERE option_name = "'.$name.'"');
+        }
+    }
+
     /**
      * Run the installation
      *
@@ -156,9 +178,9 @@ class MainWPCloneInstall
      */
     public function install()
     {
-        global $table_prefix, $wpdb;
+        global $wpdb;
 
-
+        $table_prefix = $this->config['prefix'];
         $home = get_option('home');
         $site_url = get_option('siteurl');
         // Install database

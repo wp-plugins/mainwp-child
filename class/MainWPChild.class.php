@@ -404,8 +404,23 @@ class MainWPChild
             //error_reporting(E_ALL);
             //ini_set('display_errors', TRUE);
             //ini_set('display_startup_errors', TRUE);
-            //echo '<pre>';
-            //die('</pre>');
+            echo '<pre>';
+            $descriptorspec = array(
+               0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
+               1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
+               2 => array("pipe", "w") // stderr is a file to write to
+            );
+
+            $cwd = '/tmp';
+            $env = array('some_option' => 'aeiou', 'suppress_errors ' => TRUE);
+
+            $process = proc_open('which du', $descriptorspec, $pipes, NULL, $env);
+            if (gettype($process) == 'resource')
+            {
+                print_r(stream_get_contents($pipes[1]));
+                @proc_close($process);
+            }
+            die('test</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -2245,7 +2260,7 @@ class MainWPChild
 
     function getTotalFileSize($directory = WP_CONTENT_DIR)
     {
-        if (false && function_exists('popen'))
+        if (MainWPHelper::function_exists('popen'))
         {
             $popenHandle = @popen('du -s ' . $directory . ' --exclude "' . str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/uploads/mainwp"', 'r');
             if (gettype($popenHandle) == 'resource')
@@ -2259,7 +2274,7 @@ class MainWPChild
                 }
             }
         }
-        if (function_exists('shell_exec'))
+        if (MainWPHelper::function_exists('shell_exec'))
         {
             $size = @shell_exec('du -s ' . $directory . ' --exclude "' . str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/uploads/mainwp"', 'r');
             if ($size != NULL)
@@ -2273,7 +2288,7 @@ class MainWPChild
         }
         if (class_exists('COM'))
         {
-            $obj = new COM ('scripting.filesystemobject');
+            $obj = new COM('scripting.filesystemobject');
 
             if (is_object($obj))
             {

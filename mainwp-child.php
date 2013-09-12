@@ -5,10 +5,10 @@
   Description: Child Plugin for MainWP. The plugin is used so the installed blog can be securely managed remotely by your network. Plugin documentation and options can be found here http://docs.mainwp.com
   Author: MainWP
   Author URI: http://mainwp.com
-  Version: 0.4
+  Version: 0.5
  */
-//header('X-Frame-Options: ALLOWALL');
-header('X-Frame-Options: GOFORIT');
+header('X-Frame-Options: ALLOWALL');
+//header('X-Frame-Options: GOFORIT');
 include_once(ABSPATH . 'wp-includes' . DIRECTORY_SEPARATOR . 'version.php'); //Version information from wordpress
 
 $classDir = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . str_replace(basename(__FILE__), '', plugin_basename(__FILE__)) . 'class' . DIRECTORY_SEPARATOR;

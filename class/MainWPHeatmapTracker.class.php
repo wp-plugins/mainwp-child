@@ -275,7 +275,7 @@ class MainWPHeatmapTracker
 				'var trackerNonce="'. wp_create_nonce('heatmapSaveClick') .'";';
 		if ( $this->displayHeatmap() )
 		{
-			wp_den_script('admin-bar');
+			wp_deregister_script('admin-bar');
 			wp_deregister_style('admin-bar');
 			remove_action('wp_footer','wp_admin_bar_render',1000);
 			remove_action('wp_head', '_admin_bar_bump_cb');

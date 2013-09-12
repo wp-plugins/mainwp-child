@@ -185,12 +185,10 @@ class MainWPCloneInstall
         $site_url = get_option('siteurl');
         // Install database
         define('WP_INSTALLING', true);
-//        define('ABSPATH', ABSPATH);
-//        define('WPINC', 'wp-includes');
-//        define('WP_CONTENT_DIR', ABSPATH . 'wp-content');
         define('WP_DEBUG', false);
         $query = '';
         $tableName = '';
+        $wpdb->query('SET foreign_key_checks = 0');
         $handle = @fopen(WP_CONTENT_DIR . '/dbBackup.sql', 'r');
         if ($handle)
         {
@@ -262,7 +260,7 @@ class MainWPCloneInstall
             $option_id = $row['option_id'];
             $wpdb->query('UPDATE '.$table_prefix.'options SET option_value = "'.mysql_real_escape_string($option_val).'" WHERE option_id = '.$option_id);
         }
-//die('jup');
+        $wpdb->query('SET foreign_key_checks = 1');
         return true;
     }
 

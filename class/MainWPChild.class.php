@@ -404,23 +404,8 @@ class MainWPChild
             //error_reporting(E_ALL);
             //ini_set('display_errors', TRUE);
             //ini_set('display_startup_errors', TRUE);
-            echo '<pre>';
-            $descriptorspec = array(
-               0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
-               1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
-               2 => array("pipe", "w") // stderr is a file to write to
-            );
-
-            $cwd = '/tmp';
-            $env = array('some_option' => 'aeiou', 'suppress_errors ' => TRUE);
-
-            $process = proc_open('which du', $descriptorspec, $pipes, NULL, $env);
-            if (gettype($process) == 'resource')
-            {
-                print_r(stream_get_contents($pipes[1]));
-                @proc_close($process);
-            }
-            die('test</pre>');
+            //echo '<pre>';
+            //die('</pre>');
         }
 
         //Register does not require auth, so we register here..

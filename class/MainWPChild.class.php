@@ -69,6 +69,17 @@ class MainWPChild
         $this->checkOtherAuth();
 
         MainWPClone::init();
+
+        //Clean legacy...
+        if (get_option('mainwp_child_legacy') === false)
+        {
+            $upload_dir = wp_upload_dir();
+            $dir = $upload_dir['basedir'] . DIRECTORY_SEPARATOR . 'sicknetwork' . DIRECTORY_SEPARATOR;
+
+            MainWPHelper::delete_dir($dir);
+
+            update_option('mainwp_child_legacy', true);
+        }
     }
 
     function checkOtherAuth()

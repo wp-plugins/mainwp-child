@@ -6,7 +6,7 @@ Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.4
 Tested up to: 3.6
-Stable tag: 0.5
+Stable tag: 0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,10 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 10. The Extension Screen
 
 == Changelog ==
+
+= 0.6 =
+Fixed plugin conflict with WooCommerce plugin for cloning
+Fixed backups having double the size
 
 = 0.5 =
 Fixed issue with importing database with custom foreign key references

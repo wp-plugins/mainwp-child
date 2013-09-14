@@ -589,7 +589,7 @@ class MainWPClone
             $result = MainWPHelper::fetchUrl($url, array('cloneFunc' => 'createCloneBackup', 'key' => $key, 'file' => $rand, 'wpversion' => $wp_version));
 
             if (!$result['backup']) throw new Exception('Could not create backupfile on child');
-            session_start();
+            @session_start();
 
             update_option('mainwp_temp_clone_plugins', $result['plugins']);
             update_option('mainwp_temp_clone_themes', $result['themes']);

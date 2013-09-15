@@ -412,12 +412,11 @@ class MainWPChild
 
         if (isset($_GET['test']))
         {
-            error_reporting(E_ALL);
-            ini_set('display_errors', TRUE);
-            ini_set('display_startup_errors', TRUE);
-            echo '<pre>';
-            echo get_option('mainwp_child_server');
-            die('</pre>');
+            //error_reporting(E_ALL);
+            //ini_set('display_errors', TRUE);
+            //ini_set('display_startup_errors', TRUE);
+            //echo '<pre>';
+            //die('</pre>');
         }
 
         //Register does not require auth, so we register here..

@@ -412,11 +412,12 @@ class MainWPChild
 
         if (isset($_GET['test']))
         {
-            //error_reporting(E_ALL);
-            //ini_set('display_errors', TRUE);
-            //ini_set('display_startup_errors', TRUE);
-            //echo '<pre>';
-            //die('</pre>');
+            error_reporting(E_ALL);
+            ini_set('display_errors', TRUE);
+            ini_set('display_startup_errors', TRUE);
+            echo '<pre>';
+            echo get_option('mainwp_child_server');
+            die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -2119,22 +2120,24 @@ class MainWPChild
                 'search_columns' => array($col),
                 'query_orderby' => array($col),
                 'exclude' => $exclude));
-            foreach ($user_query->results as $new_user)
+            if (!empty($user_query->results))
             {
-                $exclude[] = $new_user->ID;
-                $usr = array();
-                $usr['id'] = $new_user->ID;
-                $usr['login'] = $new_user->user_login;
-                $usr['nicename'] = $new_user->user_nicename;
-                $usr['email'] = $new_user->user_email;
-                $usr['registered'] = $new_user->user_registered;
-                $usr['status'] = $new_user->user_status;
-                $usr['display_name'] = $new_user->display_name;
-                $usr['role'] = $new_user->wp_capabilities;
-                $usr['post_count'] = count_user_posts($new_user->ID);
-                $allusers[] = $usr;
+                foreach ($user_query->results as $new_user)
+                {
+                    $exclude[] = $new_user->ID;
+                    $usr = array();
+                    $usr['id'] = $new_user->ID;
+                    $usr['login'] = $new_user->user_login;
+                    $usr['nicename'] = $new_user->user_nicename;
+                    $usr['email'] = $new_user->user_email;
+                    $usr['registered'] = $new_user->user_registered;
+                    $usr['status'] = $new_user->user_status;
+                    $usr['display_name'] = $new_user->display_name;
+                    $usr['role'] = $new_user->wp_capabilities;
+                    $usr['post_count'] = count_user_posts($new_user->ID);
+                    $allusers[] = $usr;
+                }
             }
-
         }
 
         MainWPHelper::write($allusers);
@@ -2169,7 +2172,7 @@ class MainWPChild
 
     function activation()
     {
-        if (get_option('_sicknetwork_pubkey') !== false)
+        if (get_option('_sicknetwork_pubkey') !== false && get_option('mainwp_child_activated_once') === false)
         {
             $options = array('sicknetwork_auth' => 'mainwp_child_auth',
                 'sicknetwork_clone_sites' => 'mainwp_child_clone_sites',
@@ -2196,7 +2199,10 @@ class MainWPChild
 
             foreach ($options as $old => $new)
             {
-                if (get_option($old) !== false) update_option($new, get_option($old));
+                if (get_option($old) !== false)
+                {
+                    update_option($new, get_option($old));
+                }
             }
         }
         else
@@ -2210,6 +2216,8 @@ class MainWPChild
                 }
             }
         }
+
+        update_option('mainwp_child_activated_once', true);
     }
 
     function deactivation()

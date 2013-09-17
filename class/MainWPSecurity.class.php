@@ -254,7 +254,7 @@ class MainWPSecurity
     //PHP error reporting turned on/off
     public static function remove_php_reporting_ok()
     {
-        return !(ini_get('display_errors') != 'off' || ini_get('display_startup_errors') != 0);
+        return !(((ini_get('display_errors') != 0) && (ini_get('display_errors') != 'off')) || ((ini_get('display_startup_errors') != 0) && (ini_get('display_startup_errors') != 'off')));
     }
 
     public static function remove_php_reporting()

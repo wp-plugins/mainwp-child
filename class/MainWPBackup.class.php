@@ -388,7 +388,7 @@ class MainWPBackup
 
     public function addFileFromStringToPCLZip($file, $string, $filepath)
    	{
-        $file = preg_replace("/(?:\.|\/)*(.*)/", "\\1", $file);
+        $file = preg_replace("/(?:\.|\/)*(.*)/", "$1", $file);
    		$localpath = dirname($file);
    		$tmpfilename = dirname($filepath). '/' . basename($file);
    		if (false !== file_put_contents($tmpfilename, $string)) {

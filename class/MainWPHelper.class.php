@@ -130,7 +130,7 @@ class MainWPHelper
         $permalink = get_permalink( $new_post_id );
 
         //Set custom fields
-        $not_allowed = array('_slug', '_tags', '_edit_lock', '_selected_sites', '_selected_groups', '_selected_by', '_categories', '_edit_last');
+        $not_allowed = array('_slug', '_tags', '_edit_lock', '_selected_sites', '_selected_groups', '_selected_by', '_categories', '_edit_last', '_sticky');
         foreach ($post_custom as $meta_key => $meta_values)
         {
             if (!in_array($meta_key, $not_allowed))
@@ -138,6 +138,16 @@ class MainWPHelper
                 foreach ($meta_values as $meta_value)
                 {
                     add_post_meta($new_post_id, $meta_key, $meta_value);
+                }
+            }
+            else if ($meta_key == '_sticky')
+            {
+                foreach ($meta_values as $meta_value)
+                {
+                    if (base64_decode($meta_value) == 'sticky')
+                    {
+                        stick_post($new_post_id);
+                    }
                 }
             }
         }

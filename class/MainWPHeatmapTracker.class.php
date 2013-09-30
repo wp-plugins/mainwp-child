@@ -255,11 +255,11 @@ class MainWPHeatmapTracker
 		if ( ! is_admin() )
 		{
 			wp_enqueue_script('jquery');
-			wp_enqueue_script('heatmapTracker', WP_PLUGIN_URL.'/'. plugin_basename(dirname(dirname(__FILE__))).'/js/tracker.js');
+			wp_enqueue_script('heatmapTracker', plugins_url('/js/tracker.js', dirname(__FILE__)));
 			if ( $this->displayHeatmap() )
 			{
-				wp_enqueue_script('heatmapJs', WP_PLUGIN_URL.'/'. plugin_basename(dirname(dirname(__FILE__))).'/js/heatmap.js');
-				wp_enqueue_script('heatmapInit', WP_PLUGIN_URL.'/'. plugin_basename(dirname(dirname(__FILE__))).'/js/heatmapinit.js');
+				wp_enqueue_script('heatmapJs', plugins_url('/js/heatmap.js', dirname(__FILE__)));
+				wp_enqueue_script('heatmapInit', plugins_url('/js/heatmapinit.js', dirname(__FILE__)));
 			}
 			add_action('wp_head', array($this, 'trackerJsInline'), 1);
 		}
@@ -279,7 +279,7 @@ class MainWPHeatmapTracker
 			wp_deregister_style('admin-bar');
 			remove_action('wp_footer','wp_admin_bar_render',1000);
 			remove_action('wp_head', '_admin_bar_bump_cb');
-			$pageUrl = sprintf('%s%s', preg_replace('#^((http|https)://([^/]+)).*#is', '\\1', site_url()), $_SERVER['REQUEST_URI']);
+			$pageUrl = sprintf('%s%s', preg_replace('#^((http|https)://([^/]+)).*#is', '$1', site_url()), $_SERVER['REQUEST_URI']);
 			$pageUrl = preg_replace('#(&|\?)heatmap(|_start|_end|_browser|_browser_version|_platform|_width)=([^&]*)#is', '', $pageUrl);
 			$page = $this->getPageObject($pageUrl);
 			$start = isset( $_GET['heatmap_start'] ) && preg_match('/^[0123][0-9]\/[01][0-9]\/[2][01][0-9]{2}$/is', $_GET['heatmap_start']) ? $_GET['heatmap_start'] : null;

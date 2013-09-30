@@ -203,7 +203,7 @@ class MainWPCloneInstall
                     if (trim($query) != '')
                     {
                         $queryTable = $tableName;
-                        $query = preg_replace('/^(DROP +TABLE +IF +EXISTS|CREATE +TABLE|INSERT +INTO) +(\S+)/is', '\\1 `' . $queryTable . '`', $query);
+                        $query = preg_replace('/^(DROP +TABLE +IF +EXISTS|CREATE +TABLE|INSERT +INTO) +(\S+)/is', '$1 `' . $queryTable . '`', $query);
 
                         $query = str_replace($this->config['home'], $home, $query);
                         $query = str_replace($this->config['siteurl'], $site_url, $query);
@@ -229,7 +229,7 @@ class MainWPCloneInstall
             if (trim($query) != '')
             {
                 $queryTable = $tableName;
-                $query = preg_replace('/^(DROP +TABLE +IF +EXISTS|CREATE +TABLE|INSERT +INTO) +(\S+)/is', '\\1 `' . $queryTable . '`', $query);
+                $query = preg_replace('/^(DROP +TABLE +IF +EXISTS|CREATE +TABLE|INSERT +INTO) +(\S+)/is', '$1 `' . $queryTable . '`', $query);
 
                 $query = str_replace($this->config['home'], $home, $query);
                 $query = str_replace($this->config['siteurl'], $site_url, $query);
@@ -436,7 +436,7 @@ class MainWPCloneInstall
      */
     protected function replaceDefine($constant, $value, $content)
     {
-        return preg_replace('/(define *\( *[\'"]' . $constant . '[\'"] *, *[\'"])(.*?)([\'"] *\))/is', '\\1' . $value . '\\3', $content);
+        return preg_replace('/(define *\( *[\'"]' . $constant . '[\'"] *, *[\'"])(.*?)([\'"] *\))/is', '$1' . $value . '$3', $content);
     }
 
     /**
@@ -449,7 +449,7 @@ class MainWPCloneInstall
      */
     protected function replaceVar($varname, $value, $content)
     {
-        return preg_replace('/(\$' . $varname . ' *= *[\'"])(.*?)([\'"] *;)/is', '\\1' . $value . '\\3', $content);
+        return preg_replace('/(\$' . $varname . ' *= *[\'"])(.*?)([\'"] *;)/is', '$1' . $value . '$3', $content);
     }
 
     function recurse_chmod($mypath, $arg)

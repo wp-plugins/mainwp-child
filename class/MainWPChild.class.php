@@ -38,7 +38,9 @@ class MainWPChild
         'insert_comment' => 'insert_comment',
         'get_post_meta' => 'get_post_meta',
         'get_total_ezine_post' => 'get_total_ezine_post',
-        'get_next_time_to_post' => 'get_next_time_to_post'
+        'get_next_time_to_post' => 'get_next_time_to_post',
+        'get_next_time_of_post_to_post' => 'get_next_time_of_post_to_post',
+        'get_next_time_of_page_to_post' => 'get_next_time_of_page_to_post'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -1183,10 +1185,13 @@ class MainWPChild
 
     function doSecurityFix()
     {
+        $sync = false;
         if ($_POST['feature'] == 'all')
         {
             //fix all
+            $sync = true;
         }
+
         $information = array();
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'listing')
         {
@@ -1274,13 +1279,23 @@ class MainWPChild
             $information['admin'] = (!MainWPSecurity::admin_user_ok() ? 'N' : 'Y');
         }
 
+        if ($sync)
+        {
+            $information['sync'] = $this->getSiteStats(array(), false);
+        }
         MainWPHelper::write($information);
     }
 
     function doSecurityUnFix()
     {
         $information = array();
-        
+
+        $sync = false;
+        if ($_POST['feature'] == 'all')
+        {
+            $sync = true;
+        }
+
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'wp_version')
         {
             update_option('mainwp_child_remove_wp_version', 'F');
@@ -1310,6 +1325,11 @@ class MainWPChild
             update_option('mainwp_child_remove_scripts_version', 'F');
             update_option('mainwp_child_remove_styles_version', 'F');
             $information['versions'] = 'N';
+        }
+
+        if ($sync)
+        {
+            $information['sync'] = $this->getSiteStats(array(), false);
         }
 
         MainWPHelper::write($information);
@@ -1735,12 +1755,61 @@ class MainWPChild
                 p.post_status='future' AND
                 p.post_date>'$ct'
             ORDER BY p.post_date
-            LIMIT 1
-        ");
-        if (!$next_post)
-            return;
-       $information['next_post_date'] =  $next_post->post_date;
-       $information['next_post_id'] =  $next_post->ID;
+            LIMIT 1");
+
+        if (!$next_post) return;
+
+        $information['next_post_date'] =  $next_post->post_date;
+        $information['next_post_id'] =  $next_post->ID;
+
+        MainWPHelper::write($information);
+    }
+
+    function get_next_time_of_post_to_post()
+    {
+        /** @var $wpdb wpdb */
+        global $wpdb;
+        $ct = current_time('mysql');
+        $next_post = $wpdb->get_row("
+            SELECT *
+            FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+            WHERE
+                pm.meta_key='_ezine_keyword' AND
+                p.post_status='future' AND
+                p.post_type='post' AND
+                p.post_date>'$ct'
+            ORDER BY p.post_date
+            LIMIT 1");
+
+        if (!$next_post) return;
+
+        $information['next_post_date'] =  $next_post->post_date;
+        $information['next_post_id'] =  $next_post->ID;
+
+        MainWPHelper::write($information);
+    }
+
+    function get_next_time_of_page_to_post()
+    {
+        /** @var $wpdb wpdb */
+        global $wpdb;
+        $ct = current_time('mysql');
+        $next_post = $wpdb->get_row("
+            SELECT *
+            FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+            WHERE
+                pm.meta_key='_ezine_keyword' AND
+                p.post_status='future' AND
+                p.post_type='page' AND
+                p.post_date>'$ct'
+            ORDER BY p.post_date
+            LIMIT 1");
+
+        if (!$next_post) return;
+
+        $information['next_post_date'] =  $next_post->post_date;
+        $information['next_post_id'] =  $next_post->ID;
+
         MainWPHelper::write($information);
     }
 
@@ -2132,8 +2201,9 @@ class MainWPChild
                     $usr['registered'] = $new_user->user_registered;
                     $usr['status'] = $new_user->user_status;
                     $usr['display_name'] = $new_user->display_name;
-                    $usr['role'] = $new_user->wp_capabilities;
+                    $usr['role'] = (empty($new_user->wp_capabilities) ? $new_user->roles : $new_user->wp_capabilities);
                     $usr['post_count'] = count_user_posts($new_user->ID);
+                    $usr['avatar'] = get_avatar($new_user->ID, 32);
                     $allusers[] = $usr;
                 }
             }

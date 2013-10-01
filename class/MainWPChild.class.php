@@ -133,11 +133,12 @@ class MainWPChild
         }
         else
         {
-            wp_enqueue_script('jquery-ui', 'https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js', array('jquery'));
+            wp_enqueue_script('jquery-ui-tooltip');
+            wp_enqueue_script('jquery-ui-autocomplete');
+            wp_enqueue_script('jquery-ui-progressbar');
+            wp_enqueue_script('jquery-ui-dialog');
             wp_enqueue_style('jquery-ui-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/themes/smoothness/jquery-ui.css');
         }
-//        wp_enqueue_script('jquery-ui-core');
-//        wp_enqueue_script('jquery-ui-dialog');
     }
 
     function admin_menu()
@@ -864,7 +865,7 @@ class MainWPChild
         }
         else if ($action == 'delete')
         {
-            wp_delete_post($postId);
+            wp_delete_post($postId, true);
         }
         else if ($action == 'restore')
         {
@@ -963,7 +964,7 @@ class MainWPChild
         }
         else if ($action == 'delete')
         {
-            wp_delete_comment($commentId);
+            wp_delete_comment($commentId, true);
         }
         else
         {
@@ -1012,7 +1013,7 @@ class MainWPChild
                 }
                 else if ($action == 'delete')
                 {
-                    wp_delete_comment($commentId);
+                    wp_delete_comment($commentId, true);
                 }
                 else
                 {

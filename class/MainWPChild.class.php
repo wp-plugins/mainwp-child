@@ -67,7 +67,6 @@ class MainWPChild
         $this->comments_and_clauses = '';
         add_action('init', array(&$this, 'parse_init'));
         add_action('admin_menu', array(&$this, 'admin_menu'));
-        add_action('admin_init', array(&$this, 'admin_init'));
         $this->checkOtherAuth();
 
         MainWPClone::init();
@@ -122,30 +121,14 @@ class MainWPChild
         return false;
     }
 
-    function admin_init()
-    {
-        global $wp_version;
-
-        if (version_compare('3.6', $wp_version, '>'))
-        {
-            wp_enqueue_script('jquery-ui', 'https://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js', array('jquery'));
-            wp_enqueue_style('jquery-ui-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/themes/smoothness/jquery-ui.css');
-        }
-        else
-        {
-            wp_enqueue_script('jquery-ui-tooltip');
-            wp_enqueue_script('jquery-ui-autocomplete');
-            wp_enqueue_script('jquery-ui-progressbar');
-            wp_enqueue_script('jquery-ui-dialog');
-            wp_enqueue_style('jquery-ui-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/themes/smoothness/jquery-ui.css');
-        }
-    }
-
     function admin_menu()
     {
         add_options_page('MainWPSettings', 'MainWP Settings', 'manage_options', 'MainWPSettings', array(&$this, 'settings'));
         $sitesToClone = get_option('mainwp_child_clone_sites');
-        if ($sitesToClone != '0') add_options_page('MainWPClone', 'MainWP Clone', 'manage_options', 'MainWPClone', array('MainWPClone', 'render'));
+        if ($sitesToClone != '0')
+        {
+            MainWPClone::init_menu();
+        }
     }
 
     function settings()
@@ -1746,72 +1729,163 @@ class MainWPChild
     function get_next_time_to_post()
     {
         /** @var $wpdb wpdb */
-        global $wpdb;
-        $ct = current_time('mysql');
-        $next_post = $wpdb->get_row("
-            SELECT *
-            FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
-            WHERE
-                pm.meta_key='_ezine_keyword' AND
-                p.post_status='future' AND
-                p.post_date>'$ct'
-            ORDER BY p.post_date
-            LIMIT 1");
+      try
+		{
+				global $wpdb;
+				$ct = current_time('mysql');
+				 $next_post = $wpdb->get_row("
+					SELECT *
+					FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+					WHERE
+						pm.meta_key='_ezine_keyword' AND
+						p.post_status='future' AND
+						p.post_date>'$ct'
+					ORDER BY p.post_date
+					LIMIT 1");
 
-        if (!$next_post) return;
+				if (!$next_post)
+				{
+					$information['error'] =  "Can not get next schedule post";
+				}
+				else
+				{
 
-        $information['next_post_date'] =  $next_post->post_date;
-        $information['next_post_id'] =  $next_post->ID;
+					$information['next_post_date'] =  $next_post->post_date;
+					$information['next_post_id'] =  $next_post->ID;
 
-        MainWPHelper::write($information);
+					$next_posts = $wpdb->get_results("
+						SELECT DISTINCT  `ID`
+							FROM wp_posts p
+							JOIN wp_postmeta pm ON p.ID = pm.post_id
+							WHERE pm.meta_key =  '_ezine_keyword'
+							AND p.post_status =  'future'
+							AND p.post_date > NOW( )
+							ORDER BY p.post_date
+						");
+
+
+					if (!$next_posts)
+						$information['error'] =  "Can not get all next schedule post";
+					else
+						$information['next_posts'] =  $next_posts;
+				}
+
+			MainWPHelper::write($information);
+		}
+		catch (Exception $e)
+		{
+			$information['error'] = $e->getMessage();
+			MainWPHelper::write($information);
+		}
     }
 
     function get_next_time_of_post_to_post()
     {
         /** @var $wpdb wpdb */
         global $wpdb;
-        $ct = current_time('mysql');
-        $next_post = $wpdb->get_row("
-            SELECT *
-            FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
-            WHERE
-                pm.meta_key='_ezine_keyword' AND
-                p.post_status='future' AND
-                p.post_type='post' AND
-                p.post_date>'$ct'
-            ORDER BY p.post_date
-            LIMIT 1");
+		try
+		{
+			$ct = current_time('mysql');
+			$next_post = $wpdb->get_row("
+				SELECT *
+				FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+				WHERE
+					pm.meta_key='_ezine_keyword' AND
+					p.post_status='future' AND
+					p.post_type='post' AND
+					p.post_date>'$ct'
+				ORDER BY p.post_date
+				LIMIT 1");
 
-        if (!$next_post) return;
+			if (!$next_post)
+			{
+				$information['error'] =  "Can not get next schedule post";
+			}
+			else
+			{
+				$information['next_post_date'] =  $next_post->post_date;
+				$information['next_post_id'] =  $next_post->ID;
 
-        $information['next_post_date'] =  $next_post->post_date;
-        $information['next_post_id'] =  $next_post->ID;
+				$next_posts = $wpdb->get_results("
+				SELECT DISTINCT  `ID`
+					FROM wp_posts p
+					JOIN wp_postmeta pm ON p.ID = pm.post_id
+					WHERE pm.meta_key =  '_ezine_keyword'
+					AND p.post_status =  'future'
+					AND p.post_date > NOW( )
+					ORDER BY p.post_date
+				");
 
-        MainWPHelper::write($information);
+				if (!$next_posts)
+					$information['error'] =  "Can not get all next schedule post";
+				else
+					$information['next_posts'] =  $next_posts;
+
+			}
+
+			MainWPHelper::write($information);
+		}
+		catch (Exception $e)
+		{
+			$information['error'] = $e->getMessage();
+			MainWPHelper::write($information);
+		}
     }
 
     function get_next_time_of_page_to_post()
     {
         /** @var $wpdb wpdb */
         global $wpdb;
-        $ct = current_time('mysql');
-        $next_post = $wpdb->get_row("
-            SELECT *
-            FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
-            WHERE
-                pm.meta_key='_ezine_keyword' AND
-                p.post_status='future' AND
-                p.post_type='page' AND
-                p.post_date>'$ct'
-            ORDER BY p.post_date
-            LIMIT 1");
+		try
+		{
 
-        if (!$next_post) return;
+			$ct = current_time('mysql');
+			$next_post = $wpdb->get_row("
+				SELECT *
+				FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+				WHERE
+					pm.meta_key='_ezine_keyword' AND
+					p.post_status='future' AND
+					p.post_type='page' AND
+					p.post_date>'$ct'
+				ORDER BY p.post_date
+				LIMIT 1");
 
-        $information['next_post_date'] =  $next_post->post_date;
-        $information['next_post_id'] =  $next_post->ID;
+			if (!$next_post)
+			{
+				$information['error'] =  "Can not get next schedule post";
+			}
+			else
+			{
 
-        MainWPHelper::write($information);
+				$information['next_post_date'] =  $next_post->post_date;
+				$information['next_post_id'] =  $next_post->ID;
+
+				 $next_posts = $wpdb->get_results("
+					SELECT DISTINCT  `ID`
+						FROM wp_posts p
+						JOIN wp_postmeta pm ON p.ID = pm.post_id
+						WHERE pm.meta_key =  '_ezine_keyword'
+						AND p.post_status =  'future'
+						AND p.post_date > NOW( )
+						ORDER BY p.post_date
+					");
+
+				if (!$next_posts)
+					$information['error'] =  "Can not get all next schedule post";
+				else
+					$information['next_posts'] =  $next_posts;
+
+			}
+
+			MainWPHelper::write($information);
+		}
+		catch (Exception $e)
+		{
+			$information['error'] = $e->getMessage();
+			MainWPHelper::write($information);
+		}
+
     }
 
     function get_all_pages()

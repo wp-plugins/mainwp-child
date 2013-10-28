@@ -336,6 +336,8 @@ class MainWPBackup
     {
         $this->zip->addEmptyDir(str_replace(ABSPATH, '', $path));
         $nodes = glob(rtrim($path, '/') . '/*');
+        if (empty($nodes)) return true;
+
         foreach ($nodes as $node)
         {
             if ($excludes == null || !in_array(str_replace(ABSPATH, '', $node), $excludes))
@@ -356,6 +358,8 @@ class MainWPBackup
     {
         $error = false;
         $nodes = glob(rtrim($path, '/') . '/*');
+        if (empty($nodes)) return true;
+
         foreach ($nodes as $node)
         {
             if ($excludes == null || !in_array(str_replace(ABSPATH, '', $node), $excludes))
@@ -470,7 +474,7 @@ class MainWPBackup
         $maxchars = 50000;
 
         //Get all the tables
-        $tables_db = $wpdb->get_results('SHOW TABLES FROM ' . DB_NAME, ARRAY_N);
+        $tables_db = $wpdb->get_results('SHOW TABLES FROM `' . DB_NAME . '`', ARRAY_N);
         foreach ($tables_db as $curr_table)
         {
             $table = $curr_table[0];
@@ -510,8 +514,8 @@ class MainWPBackup
                         //$add_insert_each .= "'" . str_replace(array("\n", "\r", "'"), array('\n', '\r', "\'"), $value) . "',";
 
                         $value = addslashes($value);
-                        $value = ereg_replace("\n","\\n",$value);
-                        $value = ereg_replace("\r","\\r",$value);
+                        $value = str_replace("\n","\\n",$value);
+                        $value = str_replace("\r","\\r",$value);
                         $add_insert_each.= '"'.$value.'",' ;
                     }
                     $add_insert .= trim($add_insert_each, ',') . ')';

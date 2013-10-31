@@ -6,7 +6,7 @@ Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.4
 Tested up to: 3.6
-Stable tag: 0.9
+Stable tag: 0.10
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,11 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 10. The Extension Screen
 
 == Changelog ==
+
+= 0.10 =
+Fixed plugin conflict
+Fixed backup issue with database names with dashes
+Fixed date formatting
 
 = 0.9 =
 Fixed delete permanently bug

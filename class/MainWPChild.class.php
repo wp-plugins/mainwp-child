@@ -1601,7 +1601,7 @@ class MainWPChild
                 $outPost['status'] = $post->post_status;
                 $outPost['title'] = $post->post_title;
                 $outPost['comment_count'] = $post->comment_count;
-                $outPost['dts'] = $post->post_modified;
+                $outPost['dts'] = strtotime($post->post_modified_gmt);
                 $usr = get_user_by('id', $post->post_author);
                 $outPost['author'] = $usr->user_nicename;
                 $categoryObjects = get_the_category($post->ID);
@@ -1905,17 +1905,24 @@ class MainWPChild
 
         add_filter('posts_where', array(&$this, 'posts_where'));
 
-        if (isset($_POST['keyword']))
+        if (isset($_POST['postId']))
         {
-            $this->posts_where_suffix .= " AND $wpdb->posts.post_content LIKE '%" . $_POST['keyword'] . "%'";
+            $this->posts_where_suffix .= " AND $wpdb->posts.ID = " . $_POST['postId'];
         }
-        if (isset($_POST['dtsstart']) && $_POST['dtsstart'] != '')
+        else
         {
-            $this->posts_where_suffix .= " AND $wpdb->posts.post_modified > '" . $_POST['dtsstart'] . "'";
-        }
-        if (isset($_POST['dtsstop']) && $_POST['dtsstop'] != '')
-        {
-            $this->posts_where_suffix .= " AND $wpdb->posts.post_modified < '" . $_POST['dtsstop'] . "'";
+            if (isset($_POST['keyword']))
+            {
+                $this->posts_where_suffix .= " AND $wpdb->posts.post_content LIKE '%" . $_POST['keyword'] . "%'";
+            }
+            if (isset($_POST['dtsstart']) && $_POST['dtsstart'] != '')
+            {
+                $this->posts_where_suffix .= " AND $wpdb->posts.post_modified > '" . $_POST['dtsstart'] . "'";
+            }
+            if (isset($_POST['dtsstop']) && $_POST['dtsstop'] != '')
+            {
+                $this->posts_where_suffix .= " AND $wpdb->posts.post_modified < '" . $_POST['dtsstop'] . "'";
+            }
         }
 
         $rslt = $this->get_recent_posts(explode(',', $_POST['status']), MAINWP_CHILD_NR_OF_PAGES, $type);
@@ -1936,17 +1943,24 @@ class MainWPChild
 
         add_filter('comments_clauses', array(&$this, 'comments_clauses'));
 
-        if (isset($_POST['keyword']))
+        if (isset($_POST['postId']))
         {
-            $this->comments_and_clauses .= " AND $wpdb->comments.comment_content LIKE '%" . $_POST['keyword'] . "%'";
+            $this->comments_and_clauses .= " AND $wpdb->comments.comment_post_ID = " . $_POST['postId'];
         }
-        if (isset($_POST['dtsstart']) && $_POST['dtsstart'] != '')
+        else
         {
-            $this->comments_and_clauses .= " AND $wpdb->comments.comment_date > '" . $_POST['dtsstart'] . "'";
-        }
-        if (isset($_POST['dtsstop']) && $_POST['dtsstop'] != '')
-        {
-            $this->comments_and_clauses .= " AND $wpdb->comments.comment_date < '" . $_POST['dtsstop'] . "'";
+            if (isset($_POST['keyword']))
+            {
+                $this->comments_and_clauses .= " AND $wpdb->comments.comment_content LIKE '%" . $_POST['keyword'] . "%'";
+            }
+            if (isset($_POST['dtsstart']) && $_POST['dtsstart'] != '')
+            {
+                $this->comments_and_clauses .= " AND $wpdb->comments.comment_date > '" . $_POST['dtsstart'] . "'";
+            }
+            if (isset($_POST['dtsstop']) && $_POST['dtsstop'] != '')
+            {
+                $this->comments_and_clauses .= " AND $wpdb->comments.comment_date < '" . $_POST['dtsstop'] . "'";
+            }
         }
 
         $rslt = $this->get_recent_comments(explode(',', $_POST['status']), MAINWP_CHILD_NR_OF_COMMENTS);
@@ -1966,14 +1980,16 @@ class MainWPChild
             {
                 foreach ($comments as $comment)
                 {
+                    $post = get_post($comment->comment_post_ID);
                     $outComment = array();
                     $outComment['id'] = $comment->comment_ID;
                     $outComment['status'] = wp_get_comment_status($comment->comment_ID);
                     $outComment['author'] = $comment->comment_author;
                     $outComment['postId'] = $comment->comment_post_ID;
-                    $outComment['postName'] = get_post($comment->comment_post_ID)->post_title;
+                    $outComment['postName'] = $post->post_title;
+                    $outComment['comment_count'] = $post->comment_count;
                     $outComment['content'] = $comment->comment_content;
-                    $outComment['dts'] = $comment->comment_date;
+                    $outComment['dts'] = strtotime($comment->comment_date_gmt);
                     $allComments[] = $outComment;
                 }
             }

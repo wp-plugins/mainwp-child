@@ -53,7 +53,7 @@ class MainWPHelper
         return null;
     }
 
-    static function createPost($new_post, $post_custom, $post_category, $post_featured_image, $upload_dir)
+    static function createPost($new_post, $post_custom, $post_category, $post_featured_image, $upload_dir, $post_tags)
     {
         global $current_user;
 
@@ -103,11 +103,15 @@ class MainWPHelper
                     $lnkToReplace = dirname($hrefLink);
                     $new_post['post_content'] = str_replace($lnkToReplace, $linkToReplaceWith, $new_post['post_content']);
                 }
-
-                $lnkToReplace = dirname($imgUrl);
-                $new_post['post_content'] = str_replace($lnkToReplace, $linkToReplaceWith, $new_post['post_content']);
+                else
+                {
+                    $lnkToReplace = dirname($imgUrl);
+                    $new_post['post_content'] = str_replace($lnkToReplace, $linkToReplaceWith, $new_post['post_content']);
+                }
             }
         }
+
+        if (isset($post_tags) && $post_tags != '') $new_post['tags_input'] = $post_tags;
 
         //Save the post to the wp
         remove_filter('content_save_pre', 'wp_filter_post_kses');  // to fix brake scripts or html

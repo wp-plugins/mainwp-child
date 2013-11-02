@@ -398,11 +398,11 @@ class MainWPChild
 
         if (isset($_GET['test']))
         {
-            //error_reporting(E_ALL);
-            //ini_set('display_errors', TRUE);
-            //ini_set('display_startup_errors', TRUE);
-            //echo '<pre>';
-            //die('</pre>');
+//            error_reporting(E_ALL);
+//            ini_set('display_errors', TRUE);
+//            ini_set('display_startup_errors', TRUE);
+//            echo '<pre>';
+//            die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -807,11 +807,12 @@ class MainWPChild
         $new_post = unserialize(base64_decode($_POST['new_post']));
         $post_custom = unserialize(base64_decode($_POST['post_custom']));
         $post_category = (isset($_POST['post_category']) ? base64_decode($_POST['post_category']) : null);
+        $post_tags = (isset($new_post['post_tags']) ? $new_post['post_tags'] : null);
         $post_featured_image = base64_decode($_POST['post_featured_image']);
         $upload_dir = unserialize(base64_decode($_POST['mainwp_upload_dir']));
         $new_post['_ezin_post_category'] = unserialize(base64_decode($_POST['_ezin_post_category']));
 
-        $res = MainWPHelper::createPost($new_post, $post_custom, $post_category, $post_featured_image, $upload_dir);
+        $res = MainWPHelper::createPost($new_post, $post_custom, $post_category, $post_featured_image, $upload_dir, $post_tags);
         $created = $res['success'];
         if ($created != true)
         {
@@ -1520,6 +1521,10 @@ class MainWPChild
             }
             if (count($conflicts) > 0) $information['themeConflicts'] = $conflicts;
         }
+
+        $last_post = wp_get_recent_posts('1');
+        if (isset($last_post[0])) $last_post = $last_post[0];
+        if (isset($last_post)) $information['last_post_gmt'] = strtotime($last_post['post_modified_gmt']);
 
         if ($exit) MainWPHelper::write($information);
 

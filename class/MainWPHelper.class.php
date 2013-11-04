@@ -426,15 +426,18 @@ class MainWPHelper
     public static function delete_dir( $dir ) {
         $nodes = glob($dir . '*');
 
-        foreach ($nodes as $node)
+        if (is_array($nodes))
         {
-            if (is_dir($node))
+            foreach ($nodes as $node)
             {
-                self::delete_dir($node . DIRECTORY_SEPARATOR);
-            }
-            else
-            {
-                @unlink($node);
+                if (is_dir($node))
+                {
+                    self::delete_dir($node . DIRECTORY_SEPARATOR);
+                }
+                else
+                {
+                    @unlink($node);
+                }
             }
         }
         @rmdir($dir);

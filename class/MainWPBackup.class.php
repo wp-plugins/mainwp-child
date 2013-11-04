@@ -256,6 +256,8 @@ class MainWPBackup
     }
 
     function copy_dir( $nodes, $excludes, $backupfolder ) {
+        if (!is_array($nodes)) return;
+
         foreach ($nodes as $node)
         {
             if ($excludes == null || !in_array(str_replace(ABSPATH, '', $node), $excludes))
@@ -440,7 +442,7 @@ class MainWPBackup
         if (($this->zipArchiveFileCount >= 254) || ($this->zipArchiveSizeCount >= 31457280))
         {
             $this->zip->close();
-            $this->zip->open($this->zipArchiveFileName, ZipArchive::CREATE);
+            $this->zip->open($this->zipArchiveFileName);
             $this->zipArchiveFileCount = 0;
             $this->zipArchiveSizeCount = 0;
         }

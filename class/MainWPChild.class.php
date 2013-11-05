@@ -1914,6 +1914,10 @@ class MainWPChild
         {
             $this->posts_where_suffix .= " AND $wpdb->posts.ID = " . $_POST['postId'];
         }
+        else if (isset($_POST['userId']))
+        {
+            $this->posts_where_suffix .= " AND $wpdb->posts.post_author = " . $_POST['userId'];
+        }
         else
         {
             if (isset($_POST['keyword']))

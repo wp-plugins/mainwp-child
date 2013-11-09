@@ -56,11 +56,11 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 == Changelog ==
 
 = 0.10 =
-Fixed plugin conflict
-Fixed backup issue with database names with dashes
-Fixed date formatting
-Tags are now being saved to new posts
-Fixed issue when posting an image with a link
+* Fixed plugin conflict
+* Fixed backup issue with database names with dashes
+* Fixed date formatting
+* Tags are now being saved to new posts
+* Fixed issue when posting an image with a link
 
 = 0.9 =
 Fixed delete permanently bug

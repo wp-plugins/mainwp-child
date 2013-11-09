@@ -63,33 +63,33 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 * Fixed issue when posting an image with a link
 
 = 0.9 =
-Fixed delete permanently bug
-Fixed plugin conflict
+* Fixed delete permanently bug
+* Fixed plugin conflict
 
 = 0.8 =
-Fixed issue with Content Extension
-Added feature to add sticky posts
+* Fixed issue with Content Extension
+* Added feature to add sticky posts
 
 = 0.7 =
-Fixed the message "This site already contains a link" even after reactivating the plugin
+* Fixed the message "This site already contains a link" even after reactivating the plugin
 
 = 0.6 =
-Fixed plugin conflict with WooCommerce plugin for cloning
-Fixed backups having double the size
+* Fixed plugin conflict with WooCommerce plugin for cloning
+* Fixed backups having double the size
 
 = 0.5 =
-Fixed issue with importing database with custom foreign key references
-Fixed issue with disabled functions from te "suhosin" extension
-Fixed issue with click-heatmap
+* Fixed issue with importing database with custom foreign key references
+* Fixed issue with disabled functions from te "suhosin" extension
+* Fixed issue with click-heatmap
 
 = 0.4 =
 Fixed cloning issue with custom prefix
 
 = 0.3 =
-Fixed issues with cloning (not cloning the correct source if the source was cloned)
+* Fixed issues with cloning (not cloning the correct source if the source was cloned)
 
 = 0.2 =
-Added unfix option for security issues
+* Added unfix option for security issues
 
 = 0.1 =
-Initial version
+* Initial version

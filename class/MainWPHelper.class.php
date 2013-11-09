@@ -101,13 +101,11 @@ class MainWPHelper
                 if ($hrefLink != '')
                 {
                     $lnkToReplace = dirname($hrefLink);
-                    $new_post['post_content'] = str_replace($lnkToReplace, $linkToReplaceWith, $new_post['post_content']);
+                    if ($lnkToReplace != 'http:' && $lnkToReplace != 'https:') $new_post['post_content'] = str_replace($lnkToReplace, $linkToReplaceWith, $new_post['post_content']);
                 }
-                else
-                {
-                    $lnkToReplace = dirname($imgUrl);
-                    $new_post['post_content'] = str_replace($lnkToReplace, $linkToReplaceWith, $new_post['post_content']);
-                }
+
+                $lnkToReplace = dirname($imgUrl);
+                if ($lnkToReplace != 'http:' && $lnkToReplace != 'https:') $new_post['post_content'] = str_replace($lnkToReplace, $linkToReplaceWith, $new_post['post_content']);
             }
         }
 

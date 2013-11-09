@@ -6,7 +6,7 @@ Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.4
 Tested up to: 3.6
-Stable tag: 0.9
+Stable tag: 0.10
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +60,7 @@ Fixed plugin conflict
 Fixed backup issue with database names with dashes
 Fixed date formatting
 Tags are now being saved to new posts
+Fixed issue when posting an image with a link
 
 = 0.9 =
 Fixed delete permanently bug

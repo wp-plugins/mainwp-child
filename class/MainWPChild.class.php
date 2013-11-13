@@ -67,6 +67,7 @@ class MainWPChild
         $this->comments_and_clauses = '';
         add_action('init', array(&$this, 'parse_init'));
         add_action('admin_menu', array(&$this, 'admin_menu'));
+        add_action('init', array(&$this, 'localization'));
         $this->checkOtherAuth();
 
         MainWPClone::init();
@@ -81,6 +82,11 @@ class MainWPChild
 
             update_option('mainwp_child_legacy', true);
         }
+    }
+
+    public function localization()
+    {
+        load_plugin_textdomain('mainwp-child', false, dirname(dirname(plugin_basename(__FILE__))) . '/languages/');
     }
 
     function checkOtherAuth()
@@ -231,7 +237,7 @@ class MainWPChild
 
                 if (get_option('mainwp_child_onetime_htaccess') === false)
                 {
-                    insert_with_markers($htaccess_file, 'SickNetwork', array());
+//                    insert_with_markers($htaccess_file, 'SickNetwork', array());
                     update_option('mainwp_child_onetime_htaccess', true);
                 }
             }
@@ -250,7 +256,7 @@ class MainWPChild
 
                 if (get_option('mainwp_child_onetime_htaccess') === false)
                 {
-                    insert_with_markers($htaccess_file, 'SickNetwork', array());
+//                    insert_with_markers($htaccess_file, 'SickNetwork', array());
                     update_option('mainwp_child_onetime_htaccess', true);
                 }
             }

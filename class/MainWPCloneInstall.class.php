@@ -76,9 +76,9 @@ class MainWPCloneInstall
 
     public function testDownload()
     {
-        if (!$this->file_exists('wp-content/')) throw new Exception('Not a full backup.');
-        if (!$this->file_exists('wp-admin/')) throw new Exception('Not a full backup.');
-        if (!$this->file_exists('wp-content/dbBackup.sql')) throw new Exception('Database backup not found.');
+        if (!$this->file_exists('wp-content/')) throw new Exception(__('Not a full backup.','mainwp-child'));
+        if (!$this->file_exists('wp-admin/')) throw new Exception(__('Not a full backup.','mainwp-child'));
+        if (!$this->file_exists('wp-content/dbBackup.sql')) throw new Exception(__('Database backup not found.','mainwp-child'));
     }
 
     private function file_exists($file)
@@ -115,7 +115,7 @@ class MainWPCloneInstall
     public function readConfigurationFile()
     {
         $configContents = $this->getConfigContents();
-        if ($configContents === FALSE) throw new Exception('Cant read configuration file from backup');
+        if ($configContents === FALSE) throw new Exception(__('Cant read configuration file from backup','mainwp-child'));
         $this->config = unserialize(base64_decode($configContents));
     }
 
@@ -127,10 +127,10 @@ class MainWPCloneInstall
     public function testDatabase()
     {
         $link = @mysql_connect($this->config['dbHost'], $this->config['dbUser'], $this->config['dbPass']);
-        if (!$link) throw new Exception('Invalid database host or user/password.');
+        if (!$link) throw new Exception(__('Invalid database host or user/password.','mainwp-child'));
 
         $db_selected = @mysql_select_db($this->config['dbName'], $link);
-        if (!$db_selected) throw new Exception('Invalid database name');
+        if (!$db_selected) throw new Exception(__('Invalid database name','mainwp-child'));
     }
 
     public function clean()
@@ -236,12 +236,12 @@ class MainWPCloneInstall
 //                $query = str_replace('\"', '\\\"', $query);
 //                $query = str_replace("\\\\'", "\\'", $query);
 //                $query = str_replace('\r\n', '\\\r\\\n', $query);
-                if ($wpdb->query($query) === false) throw new Exception('Error importing database');
+                if ($wpdb->query($query) === false) throw new Exception(__('Error importing database','mainwp-child'));
             }
 
             if (!feof($handle))
             {
-                throw new Exception('Error: unexpected end of file for database');
+                throw new Exception(__('Error: unexpected end of file for database','mainwp-child'));
             }
             fclose($handle);
         }

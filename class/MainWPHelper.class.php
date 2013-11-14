@@ -230,7 +230,7 @@ class MainWPHelper
 
             if (!file_exists($dir))
             {
-                self::error('Unable to create directory ' . str_replace(ABSPATH, '', $dir) . '. Is its parent directory writable by the server?');
+                self::error(__('Unable to create directory ','mainwp-child') . str_replace(ABSPATH, '', $dir) . '.' . __(' Is its parent directory writable by the server?','mainwp-child'));
             }
         }
     }
@@ -373,11 +373,11 @@ class MainWPHelper
         }
         else if ($data == '')
         {
-            throw new Exception('Something went wrong while contacting the child site. Please check if there is an error on the child site. This error could also be caused by trying to clone or restore a site to large for your server settings.');
+            throw new Exception(__('Something went wrong while contacting the child site. Please check if there is an error on the child site. This error could also be caused by trying to clone or restore a site to large for your server settings.','mainwp-child'));
         }
         else
         {
-            throw new Exception('Child plugin is disabled or the security key is incorrect. Please resync with your main installation.');
+            throw new Exception(__('Child plugin is disabled or the security key is incorrect. Please resync with your main installation.','mainwp-child'));
         }
     }
 

@@ -55,6 +55,9 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 
 == Changelog ==
 
+= 0.11 =
+* Plugin localisation
+
 = 0.10 =
 * Fixed plugin conflict
 * Fixed backup issue with database names with dashes

@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: MainWP Child \n"
+"Project-Id-Version: MainWP Child v0.11\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2013-11-14 15:50:10+0000\n"
+"PO-Revision-Date: 2013-11-15 14:06:16+0000\n"
 "Last-Translator: admin <support@mainwp.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -171,7 +171,7 @@ msgid "Cloning process completed successfully! You will now need to click"
 msgstr "Proces kloniranja uspešno završen! Potrebno je da kliknete"
 
 #: class/MainWPClone.class.php:98
-#: class/MainWPClone.class.php:892
+#: class/MainWPClone.class.php:956
 #@ mainwp-child
 msgid "here"
 msgstr "ovde"
@@ -242,45 +242,45 @@ msgstr "Ako image Kompletan Backup kreiran uz pomoć MainWP plugina, možete ga 
 msgid "A database only backup will not work."
 msgstr "Backup samo baze podataka neće raditi."
 
-#: class/MainWPClone.class.php:598
-#: class/MainWPClone.class.php:635
+#: class/MainWPClone.class.php:662
+#: class/MainWPClone.class.php:699
 #@ mainwp-child
 msgid "No site given"
 msgstr "Nema datog sajta"
 
-#: class/MainWPClone.class.php:603
-#: class/MainWPClone.class.php:640
+#: class/MainWPClone.class.php:667
+#: class/MainWPClone.class.php:704
 #@ mainwp-child
 msgid "Site not found"
 msgstr "Sajt nije pronađen"
 
-#: class/MainWPClone.class.php:615
+#: class/MainWPClone.class.php:679
 #@ mainwp-child
 msgid "Could not create backupfile on child"
 msgstr "Kreiranje backup datoteke na sajtu neuspešan"
 
-#: class/MainWPClone.class.php:651
+#: class/MainWPClone.class.php:715
 #@ mainwp-child
 msgid "Invalid response"
 msgstr "Nevažeći odgovor"
 
-#: class/MainWPClone.class.php:667
+#: class/MainWPClone.class.php:731
 #@ mainwp-child
 msgid "No download link given"
 msgstr "Link za preuzimanje nije dat"
 
-#: class/MainWPClone.class.php:739
-#: class/MainWPClone.class.php:768
+#: class/MainWPClone.class.php:803
+#: class/MainWPClone.class.php:832
 #@ mainwp-child
 msgid "No download file found"
 msgstr "Datoteka za preuzimanje nije pronađena"
 
-#: class/MainWPClone.class.php:774
+#: class/MainWPClone.class.php:838
 #@ mainwp-child
 msgid "Backup file not found"
 msgstr "Backup datoteka nije pronađena"
 
-#: class/MainWPClone.class.php:892
+#: class/MainWPClone.class.php:956
 #@ mainwp-child
 msgid "Cloning process completed successfully! Check and re-save permalinks "
 msgstr "Process kloniranja uspešno završen! Proverite i ponovo sačuvajte perma-linkove "
@@ -365,4 +365,47 @@ msgstr "Child Plugin je isključen ili je sigurnosni ključ  pogrešan. Molimo, 
 #@ mainwp-child
 msgid "MainWP Clone"
 msgstr "MainWP Kloniranje"
+
+#: class/MainWPClone.class.php:221
+#, php-format
+#@ mainwp-child
+msgid "This is a large site (%dMB), the clone process will more than likely fail."
+msgstr "Ovo je veliki sajt (%dMB), kloniranje verovatno neće uspeti."
+
+#: class/MainWPClone.class.php:222
+#@ mainwp-child
+msgid "Continue Anyway?"
+msgstr "Nastavi u svakom slučaju?"
+
+#: class/MainWPClone.class.php:223
+#, php-format
+#@ mainwp-child
+msgid "Creating backup on %s expected size: %dMB (estimated time: %d seconds)"
+msgstr "Kreiranje backupa na %s očekivana veličina %dMB (očekivano vreme trajanja %d sekundi)"
+
+#: class/MainWPClone.class.php:224
+#, php-format
+#@ mainwp-child
+msgid "Backup created on %s total size to download: %dMB"
+msgstr "Backup kreiran na %s puna veličina za download: %dMB"
+
+#: class/MainWPClone.class.php:225
+#@ mainwp-child
+msgid "Downloading backup"
+msgstr "Preuzimanje backupa"
+
+#: class/MainWPClone.class.php:226
+#@ mainwp-child
+msgid "Backup downloaded"
+msgstr "Backup preuzet"
+
+#: class/MainWPClone.class.php:227
+#@ mainwp-child
+msgid "Extracting backup and updating your database, this might take a while. Please be patient."
+msgstr "Raspakivanje backupa i ažuriranje baze podataka u toku, ovo može potrajati. Molimo, budite strpljivi."
+
+#: class/MainWPClone.class.php:228
+#@ mainwp-child
+msgid "Cloning process completed successfully!"
+msgstr "Kloniranje uspešno završeno!"
 

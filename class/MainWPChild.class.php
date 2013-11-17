@@ -1766,8 +1766,8 @@ class MainWPChild
 
 					$next_posts = $wpdb->get_results("
 						SELECT DISTINCT  `ID`
-							FROM wp_posts p
-							JOIN wp_postmeta pm ON p.ID = pm.post_id
+							FROM $wpdb->posts p
+							JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
 							WHERE pm.meta_key =  '_ezine_keyword'
 							AND p.post_status =  'future'
 							AND p.post_date > NOW( )
@@ -1819,8 +1819,8 @@ class MainWPChild
 
 				$next_posts = $wpdb->get_results("
 				SELECT DISTINCT  `ID`
-					FROM wp_posts p
-					JOIN wp_postmeta pm ON p.ID = pm.post_id
+					FROM $wpdb->posts p
+					JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
 					WHERE pm.meta_key =  '_ezine_keyword'
 					AND p.post_status =  'future'
 					AND p.post_date > NOW( )
@@ -1874,8 +1874,8 @@ class MainWPChild
 
 				 $next_posts = $wpdb->get_results("
 					SELECT DISTINCT  `ID`
-						FROM wp_posts p
-						JOIN wp_postmeta pm ON p.ID = pm.post_id
+						FROM $wpdb->posts p
+						JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
 						WHERE pm.meta_key =  '_ezine_keyword'
 						AND p.post_status =  'future'
 						AND p.post_date > NOW( )

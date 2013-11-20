@@ -20,6 +20,7 @@ class MainWPSecurity
         MainWPSecurity::remove_php_reporting();
         MainWPSecurity::remove_scripts_version();
         MainWPSecurity::remove_styles_version();
+        MainWPSecurity::remove_readme();
 
         add_filter('style_loader_src', array('MainWPSecurity', 'remove_script_versions'), 999 );
         add_filter('style_loader_src', array('MainWPSecurity', 'remove_theme_versions'), 999 );
@@ -322,6 +323,19 @@ class MainWPSecurity
             foreach ($wp_scripts->registered as $handle => $script)
                 $wp_scripts->registered[$handle]->ver = null;
         }
+    }
+
+    public static function remove_readme()
+    {
+        if (get_option('mainwp_child_remove_readme') == 'T')
+        {
+            if (file_exists(ABSPATH . 'readme.html')) @unlink(ABSPATH . 'readme.html');
+        }
+    }
+
+    public static function remove_readme_ok()
+    {
+        return !file_exists(ABSPATH . 'readme.html');
     }
 
     public static function remove_styles_version_ok()

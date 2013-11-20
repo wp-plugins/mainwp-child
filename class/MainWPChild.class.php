@@ -1270,6 +1270,13 @@ class MainWPChild
             $information['admin'] = (!MainWPSecurity::admin_user_ok() ? 'N' : 'Y');
         }
 
+        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'readme')
+        {
+            update_option('mainwp_child_remove_readme', 'T');
+            MainWPSecurity::remove_readme();
+            $information['readme'] = (MainWPSecurity::remove_readme_ok() ? 'Y' : 'N');
+        }
+
         if ($sync)
         {
             $information['sync'] = $this->getSiteStats(array(), false);
@@ -1318,6 +1325,12 @@ class MainWPChild
             $information['versions'] = 'N';
         }
 
+        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'readme')
+        {
+            update_option('mainwp_child_remove_readme', 'F');
+            $information['readme'] = MainWPSecurity::remove_readme_ok();
+        }
+
         if ($sync)
         {
             $information['sync'] = $this->getSiteStats(array(), false);
@@ -1343,6 +1356,7 @@ class MainWPChild
         $information['versions'] = (!MainWPSecurity::remove_scripts_version_ok() || !MainWPSecurity::remove_styles_version_ok()
                 ? 'N' : 'Y');
         $information['admin'] = (!MainWPSecurity::admin_user_ok() ? 'N' : 'Y');
+        $information['readme'] = (MainWPSecurity::remove_readme_ok() ? 'Y' : 'N');
 
         MainWPHelper::write($information);
     }
@@ -1462,6 +1476,7 @@ class MainWPChild
         if (!MainWPSecurity::remove_php_reporting_ok()) $securityIssuess++;
         if (!MainWPSecurity::remove_scripts_version_ok() || !MainWPSecurity::remove_styles_version_ok()) $securityIssuess++;
         if (!MainWPSecurity::admin_user_ok()) $securityIssuess++;
+        if (!MainWPSecurity::remove_readme_ok()) $securityIssuess++;
 
         $information['securityIssues'] = $securityIssuess;
 

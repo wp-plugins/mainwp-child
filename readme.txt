@@ -57,6 +57,7 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 
 = 0.11 =
 * Plugin localisation
+* Extra check for readme.html file
 
 = 0.10 =
 * Fixed plugin conflict

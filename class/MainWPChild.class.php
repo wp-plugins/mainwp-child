@@ -40,7 +40,8 @@ class MainWPChild
         'get_total_ezine_post' => 'get_total_ezine_post',
         'get_next_time_to_post' => 'get_next_time_to_post',
         'get_next_time_of_post_to_post' => 'get_next_time_of_post_to_post',
-        'get_next_time_of_page_to_post' => 'get_next_time_of_page_to_post'
+        'get_next_time_of_page_to_post' => 'get_next_time_of_page_to_post',
+        'serverInformation' => 'serverInformation'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -2523,6 +2524,20 @@ class MainWPChild
         }
 
         return dirsize($directory);
+    }
+
+    function serverInformation()
+    {
+        @ob_start();
+        MainWPServerInformation::render();
+        $output['information'] = @ob_get_contents();
+        @ob_end_clean();
+        @ob_start();
+        MainWPServerInformation::renderCron();
+        $output['cron'] = @ob_get_contents();
+        @ob_end_clean();
+
+        MainWPHelper::write($output);
     }
 }
 

@@ -120,25 +120,29 @@ class MainWPBackup
         $zipRes = $this->zip->open($filepath, ZipArchive::CREATE);
         if ($zipRes)
         {
-            if (!$addConfig)
+            $nodes = glob(ABSPATH . '*');
+            if (!$includeCoreFiles)
             {
-                $nodes = glob(ABSPATH . '*');
-            }
-            else
-            {
-                $nodes = array(WP_CONTENT_DIR);
-                if ($includeCoreFiles)
+                $coreFiles = array('favicon.ico', 'index.php', 'license.txt', 'readme.html', 'wp-activate.php', 'wp-app.php', 'wp-blog-header.php', 'wp-comments-post.php', 'wp-config.php', 'wp-config-sample.php', 'wp-cron.php', 'wp-links-opml.php', 'wp-load.php', 'wp-login.php', 'wp-mail.php', 'wp-pass.php', 'wp-register.php', 'wp-settings.php', 'wp-signup.php', 'wp-trackback.php', 'xmlrpc.php');
+                foreach ($nodes as $key => $node)
                 {
-                    $nodes[] = ABSPATH . WPINC;
-                    $nodes[] = ABSPATH . basename(admin_url(''));
-
-                    $coreFiles = array('favicon.ico', 'index.php', 'license.txt', 'readme.html', 'wp-activate.php', 'wp-app.php', 'wp-blog-header.php', 'wp-comments-post.php', 'wp-config.php', 'wp-config-sample.php', 'wp-cron.php', 'wp-links-opml.php', 'wp-load.php', 'wp-login.php', 'wp-mail.php', 'wp-pass.php', 'wp-register.php', 'wp-settings.php', 'wp-signup.php', 'wp-trackback.php', 'xmlrpc.php');
-                    foreach ($coreFiles as $coreFile)
+                    if (MainWPHelper::startsWith($node, ABSPATH . WPINC))
                     {
-                        if (file_exists(ABSPATH . $coreFile)) $nodes[] = ABSPATH . $coreFile;
+                        unset($nodes[$key]);
                     }
-                    unset($coreFiles);
+                    else if (MainWPHelper::startsWith($node, ABSPATH . basename(admin_url(''))))
+                    {
+                        unset($nodes[$key]);
+                    }
+                    else
+                    {
+                        foreach ($coreFiles as $coreFile)
+                        {
+                            if ($node == ABSPATH . $coreFile) unset($nodes[$key]);
+                        }
+                    }
                 }
+                unset($coreFiles);
             }
 
             $this->createBackupDB(dirname($filepath) . DIRECTORY_SEPARATOR . 'dbBackup.sql');
@@ -162,7 +166,7 @@ class MainWPBackup
             {
                 global $wpdb;
                 $string = base64_encode(serialize(array('siteurl' => get_option('siteurl'),
-                                                'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix)));
+                                                'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix, 'lang' => WPLANG)));
 
                 $this->addFileFromStringToZip('clone/config.txt', $string);
             }
@@ -185,26 +189,29 @@ class MainWPBackup
     {
         require_once ( ABSPATH . 'wp-admin/includes/class-pclzip.php');
         $this->zip = new PclZip($filepath);
-        if (!$addConfig)
+        $nodes = glob(ABSPATH . '*');
+        if (!$includeCoreFiles)
         {
-            $nodes = glob(ABSPATH . '*');
-        }
-        else
-        {
-            $nodes = array(WP_CONTENT_DIR);
-
-            if ($includeCoreFiles)
+            $coreFiles = array('favicon.ico', 'index.php', 'license.txt', 'readme.html', 'wp-activate.php', 'wp-app.php', 'wp-blog-header.php', 'wp-comments-post.php', 'wp-config.php', 'wp-config-sample.php', 'wp-cron.php', 'wp-links-opml.php', 'wp-load.php', 'wp-login.php', 'wp-mail.php', 'wp-pass.php', 'wp-register.php', 'wp-settings.php', 'wp-signup.php', 'wp-trackback.php', 'xmlrpc.php');
+            foreach ($nodes as $key => $node)
             {
-                $nodes[] = ABSPATH . WPINC;
-                $nodes[] = ABSPATH . basename(admin_url(''));
-
-                $coreFiles = array('favicon.ico', 'index.php', 'license.txt', 'readme.html', 'wp-activate.php', 'wp-app.php', 'wp-blog-header.php', 'wp-comments-post.php', 'wp-config.php', 'wp-config-sample.php', 'wp-cron.php', 'wp-links-opml.php', 'wp-load.php', 'wp-login.php', 'wp-mail.php', 'wp-pass.php', 'wp-register.php', 'wp-settings.php', 'wp-signup.php', 'wp-trackback.php', 'xmlrpc.php');
-                foreach ($coreFiles as $coreFile)
+                if (MainWPHelper::startsWith($node, ABSPATH . WPINC))
                 {
-                    if (file_exists(ABSPATH . $coreFile)) $nodes[] = ABSPATH . $coreFile;
+                    unset($nodes[$key]);
                 }
-                unset($coreFiles);
+                else if (MainWPHelper::startsWith($node, ABSPATH . basename(admin_url(''))))
+                {
+                    unset($nodes[$key]);
+                }
+                else
+                {
+                    foreach ($coreFiles as $coreFile)
+                    {
+                        if ($node == ABSPATH . $coreFile) unset($nodes[$key]);
+                    }
+                }
             }
+            unset($coreFiles);
         }
 
         $this->createBackupDB(dirname($filepath) . DIRECTORY_SEPARATOR . 'dbBackup.sql');
@@ -242,7 +249,7 @@ class MainWPBackup
         {
             global $wpdb;
             $string = base64_encode(serialize(array('siteurl' => get_option('siteurl'),
-                                            'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix)));
+                                            'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix, 'lang' => WPLANG)));
 
             $this->addFileFromStringToPCLZip('clone/config.txt', $string, $filepath);
         }
@@ -290,26 +297,29 @@ class MainWPBackup
         $this->createBackupDB($backupFolder . 'dbBackup.sql');
 
         //Copy installation to backup folder
-        if (!$addConfig)
+        $nodes = glob(ABSPATH . '*');
+        if (!$includeCoreFiles)
         {
-            $nodes = glob(ABSPATH . '*');
-        }
-        else
-        {
-            $nodes = array(WP_CONTENT_DIR);
-
-            if ($includeCoreFiles)
+            $coreFiles = array('favicon.ico', 'index.php', 'license.txt', 'readme.html', 'wp-activate.php', 'wp-app.php', 'wp-blog-header.php', 'wp-comments-post.php', 'wp-config.php', 'wp-config-sample.php', 'wp-cron.php', 'wp-links-opml.php', 'wp-load.php', 'wp-login.php', 'wp-mail.php', 'wp-pass.php', 'wp-register.php', 'wp-settings.php', 'wp-signup.php', 'wp-trackback.php', 'xmlrpc.php');
+            foreach ($nodes as $key => $node)
             {
-                $nodes[] = ABSPATH . WPINC;
-                $nodes[] = ABSPATH . basename(admin_url(''));
-
-                $coreFiles = array('favicon.ico', 'index.php', 'license.txt', 'readme.html', 'wp-activate.php', 'wp-app.php', 'wp-blog-header.php', 'wp-comments-post.php', 'wp-config.php', 'wp-config-sample.php', 'wp-cron.php', 'wp-links-opml.php', 'wp-load.php', 'wp-login.php', 'wp-mail.php', 'wp-pass.php', 'wp-register.php', 'wp-settings.php', 'wp-signup.php', 'wp-trackback.php', 'xmlrpc.php');
-                foreach ($coreFiles as $coreFile)
+                if (MainWPHelper::startsWith($node, ABSPATH . WPINC))
                 {
-                    if (file_exists(ABSPATH . $coreFile)) $nodes[] = ABSPATH . $coreFile;
+                    unset($nodes[$key]);
                 }
-                unset($coreFiles);
+                else if (MainWPHelper::startsWith($node, ABSPATH . basename(admin_url(''))))
+                {
+                    unset($nodes[$key]);
+                }
+                else
+                {
+                    foreach ($coreFiles as $coreFile)
+                    {
+                        if ($node == ABSPATH . $coreFile) unset($nodes[$key]);
+                    }
+                }
             }
+            unset($coreFiles);
         }
         $this->copy_dir($nodes, $excludes, $backupFolder);
         unset($nodes);
@@ -322,7 +332,7 @@ class MainWPBackup
         {
             global $wpdb;
             $string = base64_encode(serialize(array('siteurl' => get_option('siteurl'),
-                                            'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix)));
+                                            'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix, 'lang' => WPLANG)));
 
             $this->addFileFromStringToPCLZip('clone/config.txt', $string, $filepath);
         }

@@ -276,7 +276,7 @@ class MainWPHelper
         return $init;
     }
 
-    function startsWith($haystack, $needle)
+    public static function startsWith($haystack, $needle)
     {
         return !strncmp($haystack, $needle, strlen($needle));
     }

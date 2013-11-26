@@ -265,7 +265,7 @@ class MainWPClone
                     handleCloneError(resp);
                     return;
                 }
-                updateClonePopup(mwp_sprintf(translations['backup_created'], pSiteName, resp.size / 1024).toFixed(2));
+                updateClonePopup(mwp_sprintf(translations['backup_created'], pSiteName, (resp.size / 1024).toFixed(2)));
                 //update view;
                 cloneInitiateBackupDownload(pSiteId, resp.url, resp.size);
             } }(siteId, siteName), 'json');

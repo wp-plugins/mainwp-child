@@ -323,6 +323,7 @@ class MainWPChild
                     $information['size'] = $res['filesize'];
                 }
 
+                //todo: RS: Remove this when the .18 is out
                 $plugins = array();
                 $dir = WP_CONTENT_DIR . '/plugins/';
                 $fh = @opendir($dir);

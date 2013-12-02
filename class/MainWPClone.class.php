@@ -371,23 +371,28 @@ class MainWPClone
                 file: file
             };
 
-            jQuery.post(ajaxurl, data, function(resp) {
-                if (resp.error)
-                {
-                    handleCloneError(resp);
-                    return;
-                }
+            jQuery.ajax({
+                type:"POST",
+                url: ajaxurl,
+                data: data,
+                success: function(resp) {
+                    if (resp.error)
+                    {
+                        handleCloneError(resp);
+                        return;
+                    }
 
-                updateClonePopup(translations['clone_complete']);
+                    updateClonePopup(translations['clone_complete']);
 
-                setTimeout(function() {
-                jQuery('#mainwp-child_clone_status').dialog('close');
-                jQuery('.mainwp-child_select_sites_box').hide();
-                jQuery('.mainwp-child_info-box-green').show();
-                jQuery('#mainwp-child_uploadclonebutton').hide();
-                jQuery('#mainwp-child_clonebutton').hide();
-                }, 1000);
-            }, 'json');
+                    setTimeout(function() {
+                    jQuery('#mainwp-child_clone_status').dialog('close');
+                    jQuery('.mainwp-child_select_sites_box').hide();
+                    jQuery('.mainwp-child_info-box-green').show();
+                    jQuery('#mainwp-child_uploadclonebutton').hide();
+                    jQuery('#mainwp-child_clonebutton').hide();
+                    }, 1000);
+                },
+                dataType: 'json'});
         };
 
 
@@ -817,9 +822,6 @@ class MainWPClone
         {
             MainWPHelper::endSession();
 
-            $plugins = get_option('mainwp_temp_clone_plugins');
-            $themes = get_option('mainwp_temp_clone_themes');
-
             $file = $_POST['file'];
             $testFull = false;
             if ($file == '')
@@ -841,13 +843,20 @@ class MainWPClone
 
             //return size in kb
             $cloneInstall = new MainWPCloneInstall($file);
+
+            //todo: RS: refactor to get those plugins after install (after .18 release)
             $cloneInstall->readConfigurationFile();
+
+            $plugins = get_option('mainwp_temp_clone_plugins');
+            $themes = get_option('mainwp_temp_clone_themes');
+
             if ($testFull)
             {
                 $cloneInstall->testDownload();
             }
             $cloneInstall->removeConfigFile();
             $cloneInstall->extractBackup();
+
 
             $pubkey = get_option('mainwp_child_pubkey');
             $uniqueId = get_option('mainwp_child_uniqueId');
@@ -860,17 +869,25 @@ class MainWPClone
             $cloneInstall->install();
             $cloneInstall->updateWPConfig();
 
-            $cloneInstall->update_option('mainwp_child_pubkey', $pubkey);
-            $cloneInstall->update_option('mainwp_child_uniqueId', $uniqueId);
-            $cloneInstall->update_option('mainwp_child_server', $server);
-            $cloneInstall->update_option('mainwp_child_nonce', $nonce);
-            $cloneInstall->update_option('mainwp_child_nossl', $nossl);
-            $cloneInstall->update_option('mainwp_child_nossl_key', $nossl_key);
-            $cloneInstall->update_option('mainwp_child_clone_sites', $sitesToClone);
-            $cloneInstall->update_option('mainwp_child_clone_permalink', true);
+
+//            $cloneInstall->update_option('mainwp_child_pubkey', $pubkey);
+//            $cloneInstall->update_option('mainwp_child_uniqueId', $uniqueId);
+//            $cloneInstall->update_option('mainwp_child_server', $server);
+//            $cloneInstall->update_option('mainwp_child_nonce', $nonce);
+//            $cloneInstall->update_option('mainwp_child_nossl', $nossl);
+//            $cloneInstall->update_option('mainwp_child_nossl_key', $nossl_key);
+//            $cloneInstall->update_option('mainwp_child_clone_sites', $sitesToClone);
+//            $cloneInstall->update_option('mainwp_child_clone_permalink', true);
+            update_option('mainwp_child_pubkey', $pubkey);
+            update_option('mainwp_child_uniqueId', $uniqueId);
+            update_option('mainwp_child_server', $server);
+            update_option('mainwp_child_nonce', $nonce);
+            update_option('mainwp_child_nossl', $nossl);
+            update_option('mainwp_child_nossl_key', $nossl_key);
+            update_option('mainwp_child_clone_sites', $sitesToClone);
+            update_option('mainwp_child_clone_permalink', true);
 
             $cloneInstall->clean();
-
             if ($plugins !== false)
             {
                 $out = array();
@@ -890,7 +907,6 @@ class MainWPClone
 
                 delete_option('mainwp_temp_clone_plugins');
             }
-
             if ($themes !== false)
             {
                 $out = array();
@@ -911,7 +927,6 @@ class MainWPClone
                 delete_option('mainwp_temp_clone_themes');
             }
             $output = array('result' => 'ok');
-
             //todo: remove old tables if other prefix?
 
             wp_logout();

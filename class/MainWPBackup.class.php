@@ -165,8 +165,35 @@ class MainWPBackup
             if ($addConfig)
             {
                 global $wpdb;
+                $plugins = array();
+                $dir = WP_CONTENT_DIR . '/plugins/';
+                $fh = @opendir($dir);
+                while ($entry = @readdir($fh))
+                {
+                    if (!@is_dir($dir . $entry)) continue;
+                    if (($entry == '.') || ($entry == '..')) continue;
+                    $plugins[] = $entry;
+                }
+                @closedir($fh);
+
+                $themes = array();
+                $dir = WP_CONTENT_DIR . '/themes/';
+                $fh = @opendir($dir);
+                while ($entry = @readdir($fh))
+                {
+                    if (!@is_dir($dir . $entry)) continue;
+                    if (($entry == '.') || ($entry == '..')) continue;
+                    $themes[] = $entry;
+                }
+                @closedir($fh);
+
                 $string = base64_encode(serialize(array('siteurl' => get_option('siteurl'),
-                                                'home' => get_option('home'), 'abspath' => ABSPATH, 'prefix' => $wpdb->prefix, 'lang' => WPLANG)));
+                                        'home' => get_option('home'),
+                                        'abspath' => ABSPATH,
+                                        'prefix' => $wpdb->prefix,
+                                        'lang' => WPLANG,
+                                        'plugins' => $plugins,
+                                        'themes' => $themes)));
 
                 $this->addFileFromStringToZip('clone/config.txt', $string);
             }
@@ -479,6 +506,45 @@ class MainWPBackup
      * @return string The SQL string
      */
     public function createBackupDB($filepath)
+    {
+        $fh = fopen($filepath, 'w'); //or error;
+
+        global $wpdb;
+
+        //Get all the tables
+        $tables_db = $wpdb->get_results('SHOW TABLES FROM `' . DB_NAME . '`', ARRAY_N);
+        foreach ($tables_db as $curr_table)
+        {
+            $table = $curr_table[0];
+
+            fwrite($fh, "\n\n" . 'DROP TABLE IF EXISTS ' . $table . ';');
+            $table_create = $wpdb->get_row('SHOW CREATE TABLE ' . $table, ARRAY_N);
+            fwrite($fh, "\n" . $table_create[1] . ";\n\n");
+
+            $rows = @mysql_query('SELECT * FROM ' . $table, $wpdb->dbh);
+            if ($rows)
+            {
+                $table_insert = 'INSERT INTO `' . $table . '` VALUES (';
+
+                while ($row = @mysql_fetch_array($rows, MYSQL_ASSOC))
+                {
+                    $query = $table_insert;
+                    foreach ($row as $value)
+                    {
+                        $query.= '"'.mysql_real_escape_string($value).'", ' ;
+                    }
+                    $query = trim($query, ', ') . ");";
+
+                    fwrite($fh, "\n" . $query);
+                }
+            }
+        }
+
+        fclose($fh);
+        return true;
+    }
+
+    public function createBackupDB_legacy($filepath)
     {
         $fh = fopen($filepath, 'w'); //or error;
 

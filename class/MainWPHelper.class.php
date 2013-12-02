@@ -188,11 +188,11 @@ class MainWPHelper
         return $ret;
     }
 
-    static function getMainWPDir($what = null)
+    static function getMainWPDir($what = null, $dieOnError = true)
     {
         $upload_dir = wp_upload_dir();
         $dir = $upload_dir['basedir'] . DIRECTORY_SEPARATOR . 'mainwp' . DIRECTORY_SEPARATOR;
-        self::checkDir($dir);
+        self::checkDir($dir, $dieOnError);
         if (!file_exists($dir . 'index.php'))
         {
             @touch($dir . 'index.php');
@@ -202,7 +202,7 @@ class MainWPHelper
         if ($what == 'backup')
         {
             $dir .= 'backup' . DIRECTORY_SEPARATOR;
-            self::checkDir($dir);
+            self::checkDir($dir, $dieOnError);
             if (!file_exists($dir . 'index.php'))
             {
                 @touch($dir . 'index.php');
@@ -213,7 +213,7 @@ class MainWPHelper
         return array($dir, $url);
     }
 
-    static function checkDir($dir)
+    static function checkDir($dir, $dieOnError)
     {
         MainWPHelper::getWPFilesystem();
         global $wp_filesystem;
@@ -230,7 +230,11 @@ class MainWPHelper
 
             if (!file_exists($dir))
             {
-                self::error(__('Unable to create directory ','mainwp-child') . str_replace(ABSPATH, '', $dir) . '.' . __(' Is its parent directory writable by the server?','mainwp-child'));
+                $error = __('Unable to create directory ', 'mainwp-child') . str_replace(ABSPATH, '', $dir) . '.' . __(' Is its parent directory writable by the server?', 'mainwp-child');
+                if ($dieOnError)
+                    self::error($error);
+                else
+                    throw new Exception($error);
             }
         }
     }

@@ -59,6 +59,8 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 * Plugin localisation
 * Extra check for readme.html file
 * Added child server information
+* Fixed restore issue: not all previous plugins/themes were removed
+* Fixed backup issue: not all files are being backed up
 
 = 0.10 =
 * Fixed plugin conflict

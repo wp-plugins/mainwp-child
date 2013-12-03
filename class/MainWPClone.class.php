@@ -95,7 +95,7 @@ class MainWPClone
             $error = true;
         }
         ?>
-    <div class="mainwp-child_info-box-green" style="display: none;"><?php _e('Cloning process completed successfully! You will now need to click','mainwp-child'); ?><a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a><?php _e(' to re-login to the admin and re-save permalinks.','mainwp-child'); ?></div>
+    <div class="mainwp-child_info-box-green" style="display: none;"><?php _e('Cloning process completed successfully! You will now need to click','mainwp-child'); ?> <a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a><?php _e(' to re-login to the admin and re-save permalinks.','mainwp-child'); ?></div>
 
     <?php
         if ($uploadFile)
@@ -244,7 +244,7 @@ class MainWPClone
             //5 mb every 10 seconds
             updateClonePopup(mwp_sprintf(translations['creating_backup'], siteName, size.toFixed(2), (size / 5 * 3).toFixed(2)));
 
-            updateClonePopup('<div id="mainwp-child-clone-create-progress" style="height: 10px !important;"></div>', false);
+            updateClonePopup('<div id="mainwp-child-clone-create-progress" style="margin-top: 1em !important;"></div>', false);
             jQuery('#mainwp-child-clone-create-progress').progressbar({value: 0, max: (size * 1024)});
 
             var data = {
@@ -304,7 +304,7 @@ class MainWPClone
         {
             updateClonePopup(translations['downloading_backup']);
 
-            updateClonePopup('<div id="mainwp-child-clone-download-progress" style="height: 10px !important;"></div>', false);
+            updateClonePopup('<div id="mainwp-child-clone-download-progress" style="margin-top: 1em !important;"></div>', false);
             jQuery('#mainwp-child-clone-download-progress').progressbar({value: 0, max: pSize});
 
             var data = {
@@ -633,6 +633,7 @@ class MainWPClone
         .ui-dialog h3 {font-family: Helvetica; text-transform: uppercase; color: #888; border-radius: 25px; -moz-border-radius: 25px; -webkit-border-radius: 25px;}
         .ui-dialog .ui-dialog-titlebar-close { background: none; border-radius: 15px; -moz- border-radius: 15px; -webkit- border-radius: 15px; color: #fff;}
         .ui-dialog .ui-dialog-titlebar-close:hover { background: #7fb100;}
+        /*
         .ui-dialog .ui-progressbar {border:5px Solid #ddd; border-radius: 25px; -moz-border-radius: 25px; -webkit-border-radius: 25px; }
         .ui-dialog .ui-progressbar-value {
             background: #7fb100;
@@ -646,7 +647,74 @@ class MainWPClone
             -ms-transition: width .4s ease-in-out;
             -o-transition: width .4s ease-in-out;
             transition: width .4s ease-in-out;
-}
+        */
+
+
+        #mainwp-child_clone_status .ui-progressbar {
+           border:5px Solid #ddd !important;
+           border-radius: 25px !important;
+           -moz-border-radius: 25px !important;
+           -webkit-border-radius: 25px !important;
+        }
+
+        #mainwp-child_clone_status .ui-progressbar-value {
+           background: #7fb100 !important;
+           border-radius: 25px!important;
+           -moz-border-radius: 25px!important;
+           -webkit-border-radius: 25px!important;
+           display: inline-block;
+           overflow: hidden;
+             -webkit-transition: width .4s ease-in-out;
+             -moz-transition: width .4s ease-in-out;
+             -ms-transition: width .4s ease-in-out;
+             -o-transition: width .4s ease-in-out;
+             transition: width .4s ease-in-out;
+        }
+
+        #mainwp-child_clone_status .ui-progressbar-value:after {
+            content: "";
+            position: relative;
+            top: 0 ;
+            height: 100%; width: 100%;
+            display: inline-block;
+
+
+            -webkit-background-size: 30px 30px;
+            -moz-background-size:    30px 30px;
+            background-size:         30px 30px;
+            overflow: hidden !important;
+            background-image: -webkit-gradient(linear, left top, right bottom,
+                        color-stop(.25, rgba(255, 255, 255, .15)), color-stop(.25, transparent),
+                        color-stop(.5, transparent), color-stop(.5, rgba(255, 255, 255, .15)),
+                        color-stop(.75, rgba(255, 255, 255, .15)), color-stop(.75, transparent),
+                        to(transparent));
+            background-image: -webkit-linear-gradient(135deg, rgba(255, 255, 255, .15) 25%, transparent 25%,
+                        transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%,
+                        transparent 75%, transparent);
+            background-image: -moz-linear-gradient(135deg, rgba(255, 255, 255, .15) 25%, transparent 25%,
+                        transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%,
+                        transparent 75%, transparent);
+            background-image: -ms-linear-gradient(135deg, rgba(255, 255, 255, .15) 25%, transparent 25%,
+                        transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%,
+                        transparent 75%, transparent);
+            background-image: -o-linear-gradient(135deg, rgba(255, 255, 255, .15) 25%, transparent 25%,
+                        transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%,
+                        transparent 75%, transparent);
+            background-image: linear-gradient(135deg, rgba(255, 255, 255, .15) 25%, transparent 25%,
+                        transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%,
+                        transparent 75%, transparent);
+
+            -webkit-animation: animate-stripes 6s linear infinite;
+            -moz-animation: animate-stripes 6s linear infinite;
+            }
+
+            @-webkit-keyframes animate-stripes {
+                0% {background-position: 0 0;} 100% {background-position: 100% 0;}
+            }
+
+            @-moz-keyframes animate-stripes {
+                0% {background-position: 0 0;} 100% {background-position: 100% 0;}
+            }
         </style>
         <?php
     }
@@ -857,7 +925,6 @@ class MainWPClone
             $cloneInstall->removeConfigFile();
             $cloneInstall->extractBackup();
 
-
             $pubkey = get_option('mainwp_child_pubkey');
             $uniqueId = get_option('mainwp_child_uniqueId');
             $server = get_option('mainwp_child_server');
@@ -968,7 +1035,7 @@ class MainWPClone
             clear: both ;
         }
         </style>
-        <div class="mainwp-child_info-box-green"><?php _e('Cloning process completed successfully! Check and re-save permalinks ','mainwp-child'); ?><a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a>.</div>
+        <div class="mainwp-child_info-box-green"><?php _e('Cloning process completed successfully! Check and re-save permalinks ','mainwp-child'); ?> <a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a>.</div>
         <?php
     }
 }

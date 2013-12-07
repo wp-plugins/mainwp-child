@@ -1615,10 +1615,12 @@ class MainWPChild
 
     function get_recent_posts_int($status, $pCount, $type = 'post', &$allPosts)
     {
-        $args = array('numberposts' => $pCount,
-            'post_status' => $status,
+        $args = array('post_status' => $status,
             'suppress_filters' => false,
             'post_type' => $type);
+
+        if ($pCount != 0) $args['numberposts'] = $pCount;
+
         $posts = get_posts($args);
         if (is_array($posts))
         {
@@ -1957,7 +1959,17 @@ class MainWPChild
             }
         }
 
-        $rslt = $this->get_recent_posts(explode(',', $_POST['status']), MAINWP_CHILD_NR_OF_PAGES, $type);
+        $maxPages = MAINWP_CHILD_NR_OF_PAGES;
+        if (isset($_POST['maxRecords']))
+        {
+            $maxPages = $_POST['maxRecords'];
+        }
+        if ($maxPages == 0)
+        {
+            $maxPages = 99999;
+        }
+
+        $rslt = $this->get_recent_posts(explode(',', $_POST['status']), $maxPages, $type);
         $this->posts_where_suffix = '';
 
         MainWPHelper::write($rslt);
@@ -1995,7 +2007,18 @@ class MainWPChild
             }
         }
 
-        $rslt = $this->get_recent_comments(explode(',', $_POST['status']), MAINWP_CHILD_NR_OF_COMMENTS);
+        $maxComments = MAINWP_CHILD_NR_OF_COMMENTS;
+        if (isset($_POST['maxRecords']))
+        {
+            $maxComments = $_POST['maxRecords'];
+        }
+
+        if ($maxComments == 0)
+        {
+            $maxComments = 99999;
+        }
+
+        $rslt = $this->get_recent_comments(explode(',', $_POST['status']), $maxComments);
         $this->comments_and_clauses = '';
 
         MainWPHelper::write($rslt);
@@ -2007,7 +2030,9 @@ class MainWPChild
 
         foreach ($pAllowedStatuses as $status)
         {
-            $comments = get_comments(array('number' => $pCount, 'status' => $status));
+            $params = array('status' => $status);
+            if ($pCount != 0) $params['number'] = $pCount;
+            $comments = get_comments($params);
             if (is_array($comments))
             {
                 foreach ($comments as $comment)

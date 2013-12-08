@@ -1,6 +1,6 @@
 <?php
 
-class MainWPServerInformation
+class MainWPChildServerInformation
 {
     public static function render()
     {
@@ -178,7 +178,7 @@ class MainWPServerInformation
 
     protected static function renderRow($pConfig, $pCompare, $pVersion, $pGetter, $pExtraText = '', $pExtraCompare = null, $pExtraVersion = null)
     {
-        $currentVersion = call_user_func(array('MainWPServerInformation', $pGetter));
+        $currentVersion = call_user_func(array('MainWPChildServerInformation', $pGetter));
 
         ?>
     <tr>

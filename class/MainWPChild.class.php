@@ -381,7 +381,7 @@ class MainWPChild
         {
             if (!is_user_logged_in() || $_REQUEST['user'] != $current_user->user_login)
             {
-                $auth = $this->auth($_REQUEST['mainwpsignature'], $_REQUEST['where'], $_REQUEST['nonce'], $_REQUEST['nossl']);
+                $auth = $this->auth(isset($_REQUEST['mainwpsignature']) ? $_REQUEST['mainwpsignature'] : '', isset($_REQUEST['where']) ? $_REQUEST['where'] : '', isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : '', isset($_REQUEST['nossl']) ? $_REQUEST['nossl'] : 0);
                 if (!$auth) return;
                 if (!$this->login($_REQUEST['user']))
                 {
@@ -419,7 +419,7 @@ class MainWPChild
             $this->registerSite();
         }
 
-        $auth = $this->auth($_POST['mainwpsignature'], $_POST['function'], $_POST['nonce'], $_POST['nossl']);
+        $auth = $this->auth(isset($_POST['mainwpsignature']) ? $_POST['mainwpsignature'] : '', isset($_POST['function']) ? $_POST['function'] : '', isset($_POST['nonce']) ? $_POST['nonce'] : '', isset($_POST['nossl']) ? $_POST['nossl'] : 0);
 
         if (!$auth && isset($_POST['mainwpsignature']))
         {
@@ -2555,11 +2555,11 @@ class MainWPChild
     function serverInformation()
     {
         @ob_start();
-        MainWPServerInformation::render();
+        MainWPChildServerInformation::render();
         $output['information'] = @ob_get_contents();
         @ob_end_clean();
         @ob_start();
-        MainWPServerInformation::renderCron();
+        MainWPChildServerInformation::renderCron();
         $output['cron'] = @ob_get_contents();
         @ob_end_clean();
 

@@ -131,6 +131,10 @@ class MainWPChild
     function admin_menu()
     {
         add_options_page('MainWPSettings', __('MainWP Settings','mainwp-child'), 'manage_options', 'MainWPSettings', array(&$this, 'settings'));
+
+        $restorePage = add_submenu_page('tools.php', 'MainWP Restore', '<span style="display: hidden"></span>', 'read', 'mainwp-child-restore', array('MainWPClone', 'renderRestore'));
+        add_action('admin_print_scripts-'.$restorePage, array('MainWPClone', 'print_scripts'));
+
         $sitesToClone = get_option('mainwp_child_clone_sites');
         if ($sitesToClone != '0')
         {
@@ -381,14 +385,25 @@ class MainWPChild
         {
             if (!is_user_logged_in() || $_REQUEST['user'] != $current_user->user_login)
             {
-                $auth = $this->auth(isset($_REQUEST['mainwpsignature']) ? $_REQUEST['mainwpsignature'] : '', isset($_REQUEST['where']) ? $_REQUEST['where'] : '', isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : '', isset($_REQUEST['nossl']) ? $_REQUEST['nossl'] : 0);
+
+                $auth = $this->auth(urldecode(isset($_REQUEST['mainwpsignature']) ? $_REQUEST['mainwpsignature'] : ''), urldecode((isset($_REQUEST['where']) ? $_REQUEST['where'] : (isset($_REQUEST['file']) ? $_REQUEST['file'] : ''))), isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : '', isset($_REQUEST['nossl']) ? $_REQUEST['nossl'] : 0);
                 if (!$auth) return;
                 if (!$this->login($_REQUEST['user']))
                 {
                     return;
                 }
             }
-            wp_safe_redirect(admin_url($_REQUEST['where']));
+
+            $where = isset($_REQUEST['where']) ? $_REQUEST['where'] : '';
+            if (isset($_POST['file']))
+            {
+                $where = 'tools.php?page=mainwp-child-restore';
+                if (session_id() == '') session_start();
+                $_SESSION['file'] = $_POST['file'];
+                $_SESSION['size'] = $_POST['size'];
+            }
+
+            wp_redirect(admin_url($where));
             exit();
         }
 

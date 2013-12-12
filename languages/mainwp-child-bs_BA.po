@@ -167,8 +167,8 @@ msgstr "Direktorium u kome se nalazi Vaš sadržaj nije upisiv. Molimo, podesite
 
 #: class/MainWPClone.class.php:98
 #@ mainwp-child
-msgid "Cloning process completed successfully! You will now need to click"
-msgstr "Proces kloniranja uspešno završen! Potrebno je da kliknete"
+msgid "Cloning process completed successfully! You will now need to click "
+msgstr "Proces kloniranja uspešno završen! Potrebno je da kliknete "
 
 #: class/MainWPClone.class.php:98
 #: class/MainWPClone.class.php:956

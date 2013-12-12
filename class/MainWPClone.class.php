@@ -7,7 +7,7 @@ class MainWPClone
         self::init_ajax();
 
         add_action('check_admin_referer', array('MainWPClone', 'permalinkChanged'));
-        if (get_option('mainwp_child_clone_permalink')) add_action('admin_notices', array('MainWPClone', 'permalinkAdminNotice'));
+        if (get_option('mainwp_child_clone_permalink') || get_option('mainwp_child_restore_permalink')) add_action('admin_notices', array('MainWPClone', 'permalinkAdminNotice'));
     }
 
     public static function init_menu()
@@ -95,7 +95,7 @@ class MainWPClone
             $error = true;
         }
         ?>
-    <div class="mainwp-child_info-box-green" style="display: none;"><?php _e('Cloning process completed successfully! You will now need to click','mainwp-child'); ?> <a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a><?php _e(' to re-login to the admin and re-save permalinks.','mainwp-child'); ?></div>
+    <div class="mainwp-child_info-box-green" style="display: none;"><?php _e('Cloning process completed successfully! You will now need to click ','mainwp-child'); ?> <a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a><?php _e(' to re-login to the admin and re-save permalinks.','mainwp-child'); ?></div>
 
     <?php
         if ($uploadFile)
@@ -153,6 +153,14 @@ class MainWPClone
     <form action="<?php echo admin_url('options-general.php?page=MainWPClone&upload=yes'); ?>" method="post" enctype="multipart/form-data"><input type="file" name="file" id="file" /> <input type="submit" name="submit" id="filesubmit" disabled="disabled" value="<?php _e('Clone/Restore Website','mainwp-child'); ?>" /></form>
         <?php
         }
+
+        self::renderJavaScript();
+    }
+
+    public static function renderJavaScript()
+    {
+        $uploadSizeInBytes = min(MainWPHelper::return_bytes(ini_get('upload_max_filesize')), MainWPHelper::return_bytes(ini_get('post_max_size')));
+        $uploadSize = MainWPHelper::human_filesize($uploadSizeInBytes);
 ?>
     <div id="mainwp-child_clone_status" title="Clone process"></div>
     <script language="javascript">
@@ -258,7 +266,7 @@ class MainWPClone
                 clearTimeout(pollingCreation);
 
                 var progressBar = jQuery('#mainwp-child-clone-create-progress');
-                progressBar.progressbar('value', progressBar.progressbar('option', 'max'));
+                progressBar.progressbar('value', parseFloat(progressBar.progressbar('option', 'max')));
 
                 if (resp.error)
                 {
@@ -309,16 +317,16 @@ class MainWPClone
 
             var data = {
                 action:'mainwp-child_clone_backupdownload',
-                siteId: pSiteId,
                 url: pUrl
             };
+            if (pSiteId != undefined) data['siteId'] = pSiteId;
 
             jQuery.post(ajaxurl, data, function(siteId) { return function(resp) {
                 backupDownloadFinished = true;
                 clearTimeout(pollingDownloading);
 
                 var progressBar = jQuery('#mainwp-child-clone-download-progress');
-                progressBar.progressbar('value', progressBar.progressbar('option', 'max'));
+                progressBar.progressbar('value', parseFloat(progressBar.progressbar('option', 'max')));
 
                 if (resp.error)
                 {
@@ -327,7 +335,7 @@ class MainWPClone
                 }
                 updateClonePopup(translations['backup_downloaded']);
 
-                //update view;
+                //update view
                 cloneInitiateExtractBackup();
             }}(pSiteId), 'json');
 
@@ -390,11 +398,23 @@ class MainWPClone
                     jQuery('.mainwp-child_info-box-green').show();
                     jQuery('#mainwp-child_uploadclonebutton').hide();
                     jQuery('#mainwp-child_clonebutton').hide();
+                    jQuery('.mainwp-hide-after-restore').hide();
                     }, 1000);
                 },
                 dataType: 'json'});
         };
 
+        jQuery(document).on('click', '#mainwp-child-restore', function() {
+            jQuery('#mainwp-child_clone_status').dialog({
+                resizable: false,
+                height: 400,
+                width: 750,
+                modal: true,
+                close: function(event, ui) {bulkTaskRunning = false; jQuery('#mainwp-child_clone_status').dialog('destroy'); }});
+
+            cloneInitiateBackupDownload(undefined, jQuery(this).attr('file'), jQuery(this).attr('size'));
+            return false;
+        });
 
         jQuery(document).on('click', '#mainwp-child_uploadclonebutton', function()
         {
@@ -814,7 +834,7 @@ class MainWPClone
             {
                 while (($file = readdir($dh)) !== false)
                 {
-                    if ($file != '.' && $file != '..' && preg_match('/^download-backup-(.*).zip/', $file))
+                    if ($file != '.' && $file != '..' && preg_match('/^download-(.*).zip/', $file))
                     {
                         @unlink($backupdir . $file);
                     }
@@ -841,13 +861,16 @@ class MainWPClone
             //Delete backup on child
             try
             {
-                $siteId = $_POST['siteId'];
-                $sitesToClone = get_option('mainwp_child_clone_sites');
-                if (is_array($sitesToClone) && isset($sitesToClone[$siteId]))
+                if (isset($_POST['siteId']))
                 {
-                    $siteToClone = $sitesToClone[$siteId];
+                    $siteId = $_POST['siteId'];
+                    $sitesToClone = get_option('mainwp_child_clone_sites');
+                    if (is_array($sitesToClone) && isset($sitesToClone[$siteId]))
+                    {
+                        $siteToClone = $sitesToClone[$siteId];
 
-                    MainWPHelper::fetchUrl($siteToClone['url'], array('cloneFunc' => 'deleteCloneBackup', 'key' => $siteToClone['extauth'], 'file' => basename($url)));
+                        MainWPHelper::fetchUrl($siteToClone['url'], array('cloneFunc' => 'deleteCloneBackup', 'key' => $siteToClone['extauth'], 'file' => basename($url)));
+                    }
                 }
             }
             catch (Exception $e)
@@ -871,7 +894,7 @@ class MainWPClone
             $dirs = MainWPHelper::getMainWPDir('backup');
             $backupdir = $dirs[0];
 
-            $files = glob($backupdir . 'download-backup-*.zip');
+            $files = glob($backupdir . 'download-*.zip');
 
             if (count($files) == 0) throw new Exception(__('No download file found','mainwp-child'));
             $output = array('size' => filesize($files[0]) / 1024);
@@ -897,7 +920,7 @@ class MainWPClone
                 $dirs = MainWPHelper::getMainWPDir('backup');
                 $backupdir = $dirs[0];
 
-                $files = glob($backupdir . 'download-backup-*.zip');
+                $files = glob($backupdir . 'download-*.zip');
 
                 if (count($files) == 0) throw new Exception(__('No download file found','mainwp-child'));
                 $file = $files[0];
@@ -952,7 +975,14 @@ class MainWPClone
             update_option('mainwp_child_nossl', $nossl);
             update_option('mainwp_child_nossl_key', $nossl_key);
             update_option('mainwp_child_clone_sites', $sitesToClone);
-            update_option('mainwp_child_clone_permalink', true);
+            if (!MainWPHelper::startsWith(basename($file), 'download-backup-'))
+            {
+                update_option('mainwp_child_restore_permalink', true);
+            }
+            else
+            {
+                update_option('mainwp_child_clone_permalink', true);
+            }
 
             $cloneInstall->clean();
             if ($plugins !== false)
@@ -1014,6 +1044,7 @@ class MainWPClone
             if (isset($_POST['permalink_structure']) || isset($_POST['category_base']) || isset($_POST['tag_base']))
             {
                 delete_option('mainwp_child_clone_permalink');
+                delete_option('mainwp_child_restore_permalink');
             }
         }
     }
@@ -1035,7 +1066,40 @@ class MainWPClone
             clear: both ;
         }
         </style>
-        <div class="mainwp-child_info-box-green"><?php _e('Cloning process completed successfully! Check and re-save permalinks ','mainwp-child'); ?> <a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a>.</div>
+        <div class="mainwp-child_info-box-green"><?php if (get_option('mainwp_child_restore_permalink') == true) { _e('Restore process completed successfully! Check and re-save permalinks ','mainwp-child'); } else { _e('Cloning process completed successfully! Check and re-save permalinks ','mainwp-child'); } ?> <a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a>.</div>
+        <?php
+    }
+
+    public static function renderRestore()
+    {
+        if (session_id() == '') @session_start();
+        $file = null;
+        $size = null;
+        if (isset($_SESSION['file']))
+        {
+            $file = $_SESSION['file'];
+            $size = $_SESSION['size'];
+            unset($_SESSION['file']);
+            unset($_SESSION['size']);
+        }
+
+        if ($file == null)
+        {
+            die('<meta http-equiv="refresh" content="0;url=' . admin_url() . '">');
+        }
+
+        self::renderStyle();
+        ?>
+        <div id="icon-options-general" class="icon32"><br></div><h2><?php _e('Restore','mainwp-child'); ?></h2>
+        <div class="mainwp-hide-after-restore">
+        <br /><?php _e('Be sure to use a FULL backup created by your Network dashboard, if critical folders are excluded it may result in a not working installation.','mainwp-child'); ?>
+        <br /><br /><a href="#" class="button-primary" file="<?php echo urldecode($file); ?>" size="<?php echo ($size / 1024); ?>" id="mainwp-child-restore"><?php _e('Start Restore','mainwp-child'); ?></a> <i><?php _e('CAUTION: this will overwrite your existing site.','mainwp-child'); ?></i>
+        </div>
+        <div class="mainwp-child_info-box-green" style="display: none;"><?php _e('Restore process completed successfully! You will now need to click ','mainwp-child'); ?> <a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a><?php _e(' to re-login to the admin and re-save permalinks.','mainwp-child'); ?></div>
+        <?php
+        self::renderJavaScript();
+        ?>
+            <script type="text/javascript">translations['clone_complete'] = '<?php _e('Restore process completed successfully!', 'mainwp-child'); ?>';</script>
         <?php
     }
 }

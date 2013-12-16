@@ -385,8 +385,9 @@ class MainWPChild
         {
             if (!is_user_logged_in() || $_REQUEST['user'] != $current_user->user_login)
             {
-
-                $auth = $this->auth(urldecode(isset($_REQUEST['mainwpsignature']) ? $_REQUEST['mainwpsignature'] : ''), urldecode((isset($_REQUEST['where']) ? $_REQUEST['where'] : (isset($_REQUEST['file']) ? $_REQUEST['file'] : ''))), isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : '', isset($_REQUEST['nossl']) ? $_REQUEST['nossl'] : 0);
+                $signature = rawurldecode(isset($_REQUEST['mainwpsignature']) ? $_REQUEST['mainwpsignature'] : '');
+//                $signature = str_replace(' ', '+', $signature);
+                $auth = $this->auth($signature, rawurldecode((isset($_REQUEST['where']) ? $_REQUEST['where'] : (isset($_REQUEST['file']) ? $_REQUEST['file'] : ''))), isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : '', isset($_REQUEST['nossl']) ? $_REQUEST['nossl'] : 0);
                 if (!$auth) return;
                 if (!$this->login($_REQUEST['user']))
                 {

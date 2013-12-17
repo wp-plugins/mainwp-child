@@ -658,9 +658,35 @@ class MainWPChild
                     break;
                 }
             }
+
             if (!isset($information['upgrade']))
             {
-                $information['upgrade'] = 'LOCALIZATION';
+                foreach ($core_updates as $core_update)
+                {
+                     if ($core_update->response == 'upgrade' && version_compare($wp_version, $core_update->current, '<'))
+                    {
+                        //Upgrade!
+                        $upgrade = false;
+                        if (class_exists('Core_Upgrader'))
+                        {
+                            $core = new Core_Upgrader();
+                            $upgrade = $core->upgrade($core_update);
+                        }
+                        //If this does not work - add code from /wp-admin/includes/class-wp-upgrader.php in the newer versions
+                        //So users can upgrade older versions too.
+                        //3rd option: 'wp_update_core'
+
+                        if (!is_wp_error($upgrade))
+                        {
+                            $information['upgrade'] = 'SUCCESS';
+                        }
+                        else
+                        {
+                            $information['upgrade'] = 'WPERROR';
+                        }
+                        break;
+                    }
+                }
             }
         }
         else

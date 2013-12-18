@@ -19,7 +19,7 @@ Allows you to manage multiple blogs from one dashboard by providing a secure con
 The MainWP Child plugin is used so the installed blog can be securely managed remotely by your Network.
 
 **Features include:**
-
+ 
 * Connect and control all your WordPress installs even those on different hosts!
 * Update all WordPress installs, Plugins and Themes from one location
 * Manage and Add all your Posts from one location

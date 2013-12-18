@@ -57,8 +57,11 @@ class MainWPChild
     private $slug;
     private $maxHistory = 5;
 
+    private $filterFunction = null;
+
     public function __construct($plugin_file)
     {
+        $this->filterFunction = create_function( '$a', 'if ($a == null) { return false; } return $a;' );
         $this->plugin_dir = dirname($plugin_file);
         $this->plugin_slug = plugin_basename($plugin_file);
         list ($t1, $t2) = explode('/', $this->plugin_slug);
@@ -622,6 +625,10 @@ class MainWPChild
         include_once(ABSPATH . '/wp-admin/includes/file.php');
         include_once(ABSPATH . '/wp-admin/includes/misc.php');
 
+
+        if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_core', $this->filterFunction, 99 );
+        if ($this->filterFunction != null) add_filter( 'pre_transient_update_core', $this->filterFunction, 99 );
+
         //Check for new versions
         @wp_version_check();
 
@@ -693,6 +700,9 @@ class MainWPChild
         {
             $information['upgrade'] = 'NORESPONSE';
         }
+        if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_core', $this->filterFunction, 99 );
+        if ($this->filterFunction != null) remove_filter( 'pre_transient_update_core', $this->filterFunction, 99 );
+
         MainWPHelper::write($information);
     }
 
@@ -715,8 +725,11 @@ class MainWPChild
         if (isset($_POST['type']) && $_POST['type'] == 'plugin')
         {
             include_once(ABSPATH . '/wp-admin/includes/update.php');
+            if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_plugins', $this->filterFunction , 99);
+
             @wp_update_plugins();
             $information['plugin_updates'] = get_plugin_updates();
+            if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_plugins', $this->filterFunction , 99);
 
             $plugins = explode(',', urldecode($_POST['list']));
             if (count($plugins) > 0)
@@ -751,10 +764,11 @@ class MainWPChild
         else if (isset($_POST['type']) && $_POST['type'] == 'theme')
         {
             include_once(ABSPATH . '/wp-admin/includes/update.php');
+            if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_themes', $this->filterFunction , 99);
             @wp_update_themes();
             include_once(ABSPATH . '/wp-admin/includes/theme.php');
             $information['theme_updates'] = $this->upgrade_get_theme_updates();
-
+            if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_themes', $this->filterFunction , 99);
             $themes = explode(',', $_POST['list']);
             if (count($themes) > 0)
             {
@@ -1475,6 +1489,8 @@ class MainWPChild
         include_once(ABSPATH . '/wp-admin/includes/update.php');
 
         //Check for new versions
+        if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_core', $this->filterFunction, 99 );
+        if ($this->filterFunction != null) add_filter( 'pre_transient_update_core', $this->filterFunction, 99 );
         @wp_version_check();
         $core_updates = get_core_updates();
         if (count($core_updates) > 0)
@@ -1495,15 +1511,18 @@ class MainWPChild
         {
             $information['wp_updates'] = null;
         }
-
+        if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_core', $this->filterFunction, 99 );
+        if ($this->filterFunction != null) remove_filter( 'pre_transient_update_core', $this->filterFunction, 99 );
+        if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_plugins', $this->filterFunction , 99);
         @wp_update_plugins();
         include_once(ABSPATH . '/wp-admin/includes/plugin.php');
         $information['plugin_updates'] = get_plugin_updates();
-
+        if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_plugins', $this->filterFunction , 99);
+        if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_themes', $this->filterFunction, 99);
         @wp_update_themes();
         include_once(ABSPATH . '/wp-admin/includes/theme.php');
         $information['theme_updates'] = $this->upgrade_get_theme_updates();
-
+        if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_themes', $this->filterFunction, 99);
         $information['recent_comments'] = $this->get_recent_comments(array('approve', 'hold'), 5);
         $information['recent_posts'] = $this->get_recent_posts(array('publish', 'draft', 'pending'), 5);
 

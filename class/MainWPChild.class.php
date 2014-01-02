@@ -428,8 +428,9 @@ class MainWPChild
 //            error_reporting(E_ALL);
 //            ini_set('display_errors', TRUE);
 //            ini_set('display_startup_errors', TRUE);
-//            echo '<pre>';
-//            die('</pre>');
+            echo '<pre>';
+            print_r(posix_getrlimit());
+            die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -1158,13 +1159,15 @@ class MainWPChild
             $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/object-cache.php';
             if (!ini_get('safe_mode')) set_time_limit(600);
 
+            $file_descriptors = (isset($_POST['file_descriptors']) ? $_POST['file_descriptors'] : 0);
+
             $newExcludes = array();
             foreach ($excludes as $exclude)
             {
                 $newExcludes[] = rtrim($exclude, '/');
             }
 
-            $res = MainWPBackup::get()->createFullBackup($newExcludes);
+            $res = MainWPBackup::get()->createFullBackup($newExcludes, '', false, false, $file_descriptors);
             if (!$res)
             {
                 $information['full'] = false;

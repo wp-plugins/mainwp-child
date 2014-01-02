@@ -6,6 +6,7 @@ class MainWPBackup
     protected $zipArchiveFileCount;
     protected $zipArchiveSizeCount;
     protected $zipArchiveFileName;
+    protected $file_descriptors;
 
     protected function __construct()
     {
@@ -26,8 +27,10 @@ class MainWPBackup
      *
      * @return array Array consisting of timestamp and the created file path
      */
-    public function createFullBackup($excludes, $filePrefix = '', $addConfig = false, $includeCoreFiles = false)
+    public function createFullBackup($excludes, $filePrefix = '', $addConfig = false, $includeCoreFiles = false, $file_descriptors = 0)
     {
+        $this->file_descriptors = $file_descriptors;
+
         $dirs = MainWPHelper::getMainWPDir('backup');
         $backupdir = $dirs[0];
         if (!defined('PCLZIP_TEMPORARY_DIR')) define('PCLZIP_TEMPORARY_DIR', $backupdir);
@@ -476,7 +479,8 @@ class MainWPBackup
 //        }
 
         //Over limits? 30 files or 30MB of files added
-        if (($this->zipArchiveFileCount >= 254) || ($this->zipArchiveSizeCount >= 31457280))
+//        if (($this->zipArchiveFileCount >= 254) || ($this->zipArchiveSizeCount >= 31457280))
+        if ((($this->file_descriptors > 0) && ($this->zipArchiveFileCount > $this->file_descriptors)) || $this->zipArchiveSizeCount >= (31457280 * 2))
         {
             $this->zip->close();
             $this->zip->open($this->zipArchiveFileName);

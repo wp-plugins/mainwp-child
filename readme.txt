@@ -55,6 +55,10 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 
 == Changelog ==
 
+= 0.17 =
+* Tuned for faster backup
+* Added extension support for Maintenance extension
+
 = 0.16 =
 * Fixed some plugin conflicts preventing updates to themes/plugins/core
 

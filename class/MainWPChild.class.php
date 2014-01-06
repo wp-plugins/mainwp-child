@@ -41,7 +41,8 @@ class MainWPChild
         'get_next_time_to_post' => 'get_next_time_to_post',
         'get_next_time_of_post_to_post' => 'get_next_time_of_post_to_post',
         'get_next_time_of_page_to_post' => 'get_next_time_of_page_to_post',
-        'serverInformation' => 'serverInformation'
+        'serverInformation' => 'serverInformation',
+        'maintenance_site' => 'maintenance_site'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -428,9 +429,8 @@ class MainWPChild
 //            error_reporting(E_ALL);
 //            ini_set('display_errors', TRUE);
 //            ini_set('display_startup_errors', TRUE);
-            echo '<pre>';
-            print_r(posix_getrlimit());
-            die('</pre>');
+//            echo '<pre>';
+//            die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -600,7 +600,7 @@ class MainWPChild
                     $thePlugin = get_plugin_data($path . $srcFile);
                     if ($thePlugin != null && $thePlugin != '' && $thePlugin['Name'] != '')
                     {
-                        activate_plugin($path . $srcFile);
+                        activate_plugin($path . $srcFile, '', false, true);
                         break;
                     }
                 }
@@ -2628,6 +2628,109 @@ class MainWPChild
         @ob_end_clean();
 
         MainWPHelper::write($output);
+    }
+
+    function maintenance_site()
+    {
+        global $wpdb;
+        $maint_options = $_POST['options'];
+        if (!is_array($maint_options))
+        {
+            $information['status'] = 'FAIL';
+            $maint_options = array();
+        }
+
+        if (in_array('revisions', $maint_options))
+        {
+            $sql_clean = "DELETE FROM $wpdb->posts WHERE post_type = 'revision'";
+            $wpdb->query($sql_clean);
+        }
+
+        if (in_array('autodraft', $maint_options))
+        {
+            $sql_clean = "DELETE FROM $wpdb->posts WHERE post_status = 'auto-draft'";
+            $wpdb->query($sql_clean);
+        }
+
+        if (in_array('trashpost', $maint_options))
+        {
+            $sql_clean = "DELETE FROM $wpdb->posts WHERE post_status = 'trash'";
+            $wpdb->query($sql_clean);
+        }
+
+        if (in_array('spam', $maint_options))
+        {
+            $sql_clean = "DELETE FROM $wpdb->comments WHERE comment_approved = 'spam'";
+            $wpdb->query($sql_clean);
+        }
+
+        if (in_array('pending', $maint_options))
+        {
+            $sql_clean = "DELETE FROM $wpdb->comments WHERE comment_approved = '0'";
+            $wpdb->query($sql_clean);
+        }
+
+        if (in_array('trashcomment', $maint_options))
+        {
+            $sql_clean = "DELETE FROM $wpdb->comments WHERE comment_approved = 'trash'";
+            $wpdb->query($sql_clean);
+        }
+
+        if (in_array('tags', $maint_options))
+        {
+            $post_tags = get_terms('post_tag', array('hide_empty' => false));
+            if (is_array($post_tags))
+            {
+                foreach ($post_tags as $tag)
+                {
+                    if ($tag->count == 0)
+                    {
+                        wp_delete_term($tag->term_id, 'post_tag');
+                    }
+                }
+            }
+        }
+
+        if (in_array('categories', $maint_options))
+        {
+            $post_cats = get_terms('category', array('hide_empty' => false));
+            if (is_array($post_cats))
+            {
+                foreach ($post_cats as $cat)
+                {
+                    if ($cat->count == 0)
+                    {
+                        wp_delete_term($cat->term_id, 'category');
+                    }
+                }
+            }
+        }
+
+        if (in_array('optimize', $maint_options))
+        {
+            $this->maintenance_optimize(true);
+        }
+
+        if (!isset($information['status'])) $information['status'] = 'SUCCESS';
+        MainWPHelper::write($information);
+    }
+
+    function maintenance_optimize($optimize)
+    {
+        if (!$optimize) return;
+
+        global $wpdb;
+
+        $sql = 'SHOW TABLE STATUS FROM `' . DB_NAME . '`';
+        $result = @mysql_query($sql, $wpdb->dbh);
+        if (@mysql_num_rows($result) && @is_resource($result))
+        {
+            while ($row = mysql_fetch_array($result))
+            {
+                $sql = 'OPTIMIZE TABLE ' . $row[0];
+                mysql_query($sql);
+            }
+        }
     }
 }
 

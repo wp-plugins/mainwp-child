@@ -901,6 +901,12 @@ class MainWPChild
         {
             wp_publish_post($postId);
         }
+        else if ($action == 'update')
+        {
+            $postData = $_POST['post_data'];
+            $my_post = is_array($postData) ? $postData : array();
+            wp_update_post($my_post);
+        }
         else if ($action == 'unpublish')
         {
             $my_post = array();
@@ -941,6 +947,7 @@ class MainWPChild
         }
 
         if (!isset($information['status'])) $information['status'] = 'SUCCESS';
+        $information['my_post'] = $my_post;
         MainWPHelper::write($information);
     }
 
@@ -1694,6 +1701,7 @@ class MainWPChild
                 $outPost['id'] = $post->ID;
                 $outPost['status'] = $post->post_status;
                 $outPost['title'] = $post->post_title;
+                $outPost['content'] = $post->post_content;
                 $outPost['comment_count'] = $post->comment_count;
                 $outPost['dts'] = strtotime($post->post_modified_gmt);
                 $usr = get_user_by('id', $post->post_author);

@@ -55,6 +55,10 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 
 == Changelog ==
 
+= 0.18 =
+* Fixed issue for sending correct roles to the main dashboard
+* Added htaccess file backup (backed up as mainwp-htaccess to prevent restore conflicts)
+
 = 0.17 =
 * Tuned for faster backup
 * Added extension support for Maintenance extension

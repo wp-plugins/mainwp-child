@@ -150,6 +150,7 @@ class MainWPBackup
 
             $this->createBackupDB(dirname($filepath) . DIRECTORY_SEPARATOR . 'dbBackup.sql');
             $this->addFileToZip(dirname($filepath) . DIRECTORY_SEPARATOR . 'dbBackup.sql', basename(WP_CONTENT_DIR) . '/' . 'dbBackup.sql');
+            if (file_exists(ABSPATH . '.htaccess')) $this->addFileToZip(ABSPATH . '.htaccess', 'mainwp-htaccess');
             foreach ($nodes as $node)
             {
                 if ($excludes == null || !in_array(str_replace(ABSPATH, '', $node), $excludes))
@@ -377,6 +378,9 @@ class MainWPBackup
     public function zipAddDir($path, $excludes)
     {
         $this->zip->addEmptyDir(str_replace(ABSPATH, '', $path));
+
+        if (file_exists(rtrim($path, '/') . '/.htaccess')) $this->addFileToZip(rtrim($path, '/') . '/.htaccess', rtrim(str_replace(ABSPATH, '', $path), '/') . '/mainwp-htaccess');
+
         $nodes = glob(rtrim($path, '/') . '/*');
         if (empty($nodes)) return true;
 

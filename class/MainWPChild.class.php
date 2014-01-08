@@ -429,8 +429,9 @@ class MainWPChild
 //            error_reporting(E_ALL);
 //            ini_set('display_errors', TRUE);
 //            ini_set('display_startup_errors', TRUE);
-//            echo '<pre>';
-//            die('</pre>');
+            echo '<pre>';
+            print_r(glob(ABSPATH . '.ht'));
+            die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -2421,7 +2422,10 @@ class MainWPChild
                     $usr['registered'] = $new_user->user_registered;
                     $usr['status'] = $new_user->user_status;
                     $usr['display_name'] = $new_user->display_name;
-                    $usr['role'] = (empty($new_user->wp_capabilities) ? $new_user->roles : $new_user->wp_capabilities);
+                    $userdata = get_userdata($new_user->ID);
+                    $user_roles = $userdata->roles;
+                    $user_role = array_shift($user_roles);
+                    $usr['role'] = $user_role;
                     $usr['post_count'] = count_user_posts($new_user->ID);
                     $usr['avatar'] = get_avatar($new_user->ID, 32);
                     $allusers[] = $usr;

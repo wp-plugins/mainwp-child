@@ -429,9 +429,8 @@ class MainWPChild
 //            error_reporting(E_ALL);
 //            ini_set('display_errors', TRUE);
 //            ini_set('display_startup_errors', TRUE);
-            echo '<pre>';
-            print_r(glob(ABSPATH . '.ht'));
-            die('</pre>');
+//            echo '<pre>';
+//            die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -643,7 +642,7 @@ class MainWPChild
                 {
                     $information['upgrade'] = 'SUCCESS';
                 }
-                else if ($core_update->response == 'upgrade' && $core_update->locale == get_locale() && version_compare($wp_version, $core_update->current, '<'))
+                else if ($core_update->response == 'upgrade' && $core_update->locale == get_locale() && version_compare($wp_version, $core_update->current, '<='))
                 {
                     //Upgrade!
                     $upgrade = false;
@@ -672,7 +671,7 @@ class MainWPChild
             {
                 foreach ($core_updates as $core_update)
                 {
-                     if ($core_update->response == 'upgrade' && version_compare($wp_version, $core_update->current, '<'))
+                     if ($core_update->response == 'upgrade' && version_compare($wp_version, $core_update->current, '<='))
                     {
                         //Upgrade!
                         $upgrade = false;
@@ -1512,7 +1511,7 @@ class MainWPChild
                 {
                     break;
                 }
-                if ($core_update->response == 'upgrade' && version_compare($wp_version, $core_update->current, '<'))
+                if ($core_update->response == 'upgrade' && version_compare($wp_version, $core_update->current, '<='))
                 {
                     $information['wp_updates'] = $core_update->current;
                 }

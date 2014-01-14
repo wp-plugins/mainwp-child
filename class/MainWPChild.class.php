@@ -2370,22 +2370,25 @@ class MainWPChild
         $allusers = array();
 
         $new_users = get_users();
-        foreach ($new_users as $new_user)
+        if (is_array($new_users))
         {
-            $usr = array();
-            $usr['id'] = $new_user->ID;
-            $usr['login'] = $new_user->user_login;
-            $usr['nicename'] = $new_user->user_nicename;
-            $usr['email'] = $new_user->user_email;
-            $usr['registered'] = $new_user->user_registered;
-            $usr['status'] = $new_user->user_status;
-            $usr['display_name'] = $new_user->display_name;
-            $userdata = get_userdata($new_user->ID);
-            $user_roles = $userdata->roles;
-            $user_role = array_shift($user_roles);
-            $usr['role'] = $user_role;
-            $usr['post_count'] = count_user_posts($new_user->ID);
-            $allusers[] = $usr;
+            foreach ($new_users as $new_user)
+            {
+                $usr = array();
+                $usr['id'] = $new_user->ID;
+                $usr['login'] = $new_user->user_login;
+                $usr['nicename'] = $new_user->user_nicename;
+                $usr['email'] = $new_user->user_email;
+                $usr['registered'] = $new_user->user_registered;
+                $usr['status'] = $new_user->user_status;
+                $usr['display_name'] = $new_user->display_name;
+                $userdata = get_userdata($new_user->ID);
+                $user_roles = $userdata->roles;
+                $user_role = array_shift($user_roles);
+                $usr['role'] = $user_role;
+                $usr['post_count'] = count_user_posts($new_user->ID);
+                $allusers[] = $usr;
+            }
         }
 
         return $allusers;

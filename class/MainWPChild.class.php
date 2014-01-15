@@ -2536,8 +2536,12 @@ class MainWPChild
             ob_start();
             if (file_exists(ABSPATH . '/wp-admin/includes/screen.php')) include_once(ABSPATH . '/wp-admin/includes/screen.php');
             if (file_exists(ABSPATH . '/wp-admin/includes/template.php')) include_once(ABSPATH . '/wp-admin/includes/template.php');
-            $creds = request_filesystem_credentials('test', $type = '', $error = false, $context = false, $extra_fields = null);
+            $creds = request_filesystem_credentials('test', '', false, false, $extra_fields = null);
             ob_end_clean();
+            if (empty($creds))
+            {
+                define('FS_METHOD', 'direct');
+            }
             WP_Filesystem($creds);
         }
 

@@ -730,7 +730,6 @@ class MainWPChild
 
             @wp_update_plugins();
             $information['plugin_updates'] = get_plugin_updates();
-            if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_plugins', $this->filterFunction , 99);
 
             $plugins = explode(',', urldecode($_POST['list']));
             if (count($plugins) > 0)
@@ -761,6 +760,8 @@ class MainWPChild
             {
                 MainWPHelper::error(__('Bad request','mainwp-child'));
             }
+
+            if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_plugins', $this->filterFunction , 99);
         }
         else if (isset($_POST['type']) && $_POST['type'] == 'theme')
         {
@@ -769,7 +770,6 @@ class MainWPChild
             @wp_update_themes();
             include_once(ABSPATH . '/wp-admin/includes/theme.php');
             $information['theme_updates'] = $this->upgrade_get_theme_updates();
-            if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_themes', $this->filterFunction , 99);
             $themes = explode(',', $_POST['list']);
             if (count($themes) > 0)
             {
@@ -799,6 +799,8 @@ class MainWPChild
             {
                 MainWPHelper::error(__('Bad request','mainwp-child'));
             }
+
+            if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_themes', $this->filterFunction , 99);
         }
         else
         {

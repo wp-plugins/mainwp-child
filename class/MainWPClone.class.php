@@ -827,7 +827,7 @@ class MainWPClone
             MainWPHelper::endSession();
             //Send request to the childsite!
             $filename = 'download-'.basename($url);
-            $dirs = MainWPHelper::getMainWPDir('backup');
+            $dirs = MainWPHelper::getMainWPDir('backup', false);
             $backupdir = $dirs[0];
 
             if ($dh = opendir($backupdir))
@@ -891,7 +891,7 @@ class MainWPClone
         try
         {
             MainWPHelper::endSession();
-            $dirs = MainWPHelper::getMainWPDir('backup');
+            $dirs = MainWPHelper::getMainWPDir('backup', false);
             $backupdir = $dirs[0];
 
             $files = glob($backupdir . 'download-*.zip');
@@ -917,7 +917,7 @@ class MainWPClone
             $testFull = false;
             if ($file == '')
             {
-                $dirs = MainWPHelper::getMainWPDir('backup');
+                $dirs = MainWPHelper::getMainWPDir('backup', false);
                 $backupdir = $dirs[0];
 
                 $files = glob($backupdir . 'download-*.zip');

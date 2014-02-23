@@ -38,6 +38,11 @@ class MainWPCloneInstall
         return false;
     }
 
+    public function checkWPZip()
+    {
+        return function_exists('unzip_file');
+    }
+
 
     public function removeConfigFile()
     {
@@ -496,7 +501,9 @@ class MainWPCloneInstall
         if (!$this->file || !file_exists($this->file))
             return false;
 
-        if ($this->checkZipConsole())
+        if ($this->checkWPZip())
+            return $this->extractWPZipBackup();
+        else if ($this->checkZipConsole())
             return $this->extractZipConsoleBackup();
         else if ($this->checkZipSupport())
             return $this->extractZipBackup();
@@ -522,6 +529,23 @@ class MainWPCloneInstall
             return true;
         }
         return false;
+    }
+
+    public function extractWPZipBackup()
+    {
+        MainWPHelper::getWPFilesystem();
+        global $wp_filesystem;
+        $tmpdir = ABSPATH;
+        if (($wp_filesystem->method == 'ftpext') && defined('FTP_BASE'))
+        {
+            $ftpBase = FTP_BASE;
+            $ftpBase = trailingslashit($ftpBase);
+            $tmpdir = str_replace(ABSPATH, $ftpBase, $tmpdir);
+        }
+
+        unzip_file($this->file, $tmpdir);
+
+        return true;
     }
 
     /**

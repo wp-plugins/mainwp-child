@@ -55,6 +55,10 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 
 == Changelog ==
 
+= 0.21 =
+* Fixed clone issue for some hosts with FTP settings
+* German translations added
+
 = 0.20 =
 * Fixed BPS-conflict where plugins were not upgrading
 

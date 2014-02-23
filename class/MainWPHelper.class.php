@@ -225,7 +225,17 @@ class MainWPHelper
             }
             else
             {
-                $wp_filesystem->mkdir($dir, 0777);
+                if (($wp_filesystem->method == 'ftpext') && defined('FTP_BASE'))
+                {
+                    $ftpBase = FTP_BASE;
+                    $ftpBase = trailingslashit($ftpBase);
+                    $tmpdir = str_replace(ABSPATH, $ftpBase, $dir);
+                }
+                else
+                {
+                    $tmpdir = $dir;
+                }
+                $wp_filesystem->mkdir($tmpdir, 0777);
             }
 
             if (!file_exists($dir))
@@ -237,6 +247,37 @@ class MainWPHelper
                     throw new Exception($error);
             }
         }
+    }
+
+    public static function validateMainWPDir()
+    {
+        $done = false;
+        $dir = MainWPHelper::getMainWPDir();
+        $dir = $dir[0];
+        if (MainWPHelper::getWPFilesystem())
+        {
+            global $wp_filesystem;
+            try
+            {
+                MainWPHelper::checkDir($dir, false);
+            }
+            catch (Exception $e)
+            {
+
+            }
+            if (!empty($wp_filesystem))
+            {
+                if ($wp_filesystem->is_writable($dir)) $done = true;
+            }
+        }
+
+        if (!$done)
+        {
+            if (!file_exists($dir)) @mkdirs($dir);
+            if (is_writable($dir)) $done = true;
+        }
+
+        return $done;
     }
 
     static function search($array, $key)
@@ -270,6 +311,10 @@ class MainWPHelper
             if (file_exists(ABSPATH . '/wp-admin/includes/template.php')) include_once(ABSPATH . '/wp-admin/includes/template.php');
             $creds = request_filesystem_credentials('test');
             ob_end_clean();
+            if (empty($creds))
+            {
+                define('FS_METHOD', 'direct');
+            }
             $init = WP_Filesystem($creds);
         }
         else

@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by JetBrains PhpStorm.
- * User: Ruben
- * Date: 24/11/11
- * Time: 20:29
- * To change this template use File | Settings | File Templates.
- */
 
 class MainWPSecurity
 {

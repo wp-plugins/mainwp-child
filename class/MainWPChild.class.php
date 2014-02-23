@@ -3,6 +3,7 @@ define('MAINWP_CHILD_NR_OF_COMMENTS', 50);
 define('MAINWP_CHILD_NR_OF_PAGES', 50);
 
 include_once(ABSPATH . '/wp-admin/includes/file.php');
+include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
@@ -42,7 +43,8 @@ class MainWPChild
         'get_next_time_of_post_to_post' => 'get_next_time_of_post_to_post',
         'get_next_time_of_page_to_post' => 'get_next_time_of_page_to_post',
         'serverInformation' => 'serverInformation',
-        'maintenance_site' => 'maintenance_site'
+        'maintenance_site' => 'maintenance_site',
+        'keyword_links_action' => 'keyword_links_action'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -86,6 +88,19 @@ class MainWPChild
             MainWPHelper::delete_dir($dir);
 
             update_option('mainwp_child_legacy', true);
+        }
+
+        add_action( 'admin_notices', array(&$this, 'admin_notice'));
+    }
+
+    public function admin_notice()
+    {
+        //Admin Notiµce...
+        if (is_plugin_active('mainwp-child/mainwp-child.php')) {
+            if (!get_option('mainwp_child_pubkey')) {
+                echo '<div class="error" style="text-align: center;"><p style="color: red; font-size: 16px; font-weight: bold;">Attention!</p>
+                      <p>Please add this site to your MainWP Dashboard now or deactivate the MainWP Child plugin until you are ready to do so to avoid security issues.</p></div>';
+            }
         }
     }
 
@@ -408,6 +423,7 @@ class MainWPChild
                 $_SESSION['size'] = $_POST['size'];
             }
 
+            add_filter('the_content', array(MainWPKeywordLinks::Instance(), 'filter_content'), 100, 2);
             wp_redirect(admin_url($where));
             exit();
         }
@@ -426,11 +442,11 @@ class MainWPChild
 
         if (isset($_GET['test']))
         {
-//            error_reporting(E_ALL);
-//            ini_set('display_errors', TRUE);
-//            ini_set('display_startup_errors', TRUE);
-//            echo '<pre>';
-//            die('</pre>');
+            //error_reporting(E_ALL);
+            //ini_set('display_errors', TRUE);
+            //ini_set('display_startup_errors', TRUE);
+            //echo '<pre>';
+            //die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -455,7 +471,7 @@ class MainWPChild
                 MainWPHelper::error(__('No such user','mainwp-child'));
             }
 
-            if ($user->wp_user_level != 10 && (!isset($user->user_level) || $user->user_level != 10))
+            if ($user->wp_user_level != 10 && (!isset($user->user_level) || $user->user_level != 10) && !current_user_can('level_10'))
             {
                 MainWPHelper::error(__('User is not an administrator','mainwp-child'));
             }
@@ -488,6 +504,11 @@ class MainWPChild
         {
             call_user_func(array($this, ($auth ? $this->callableFunctions[$_POST['function']]
                     : $this->callableFunctionsNoAuth[$_POST['function']])));
+        }
+        if (get_option('mainwpKeywordLinks') == 1) {
+            new MainWPKeywordLinks();
+            add_filter('the_content', array(MainWPKeywordLinks::Instance(), 'filter_content'), 100);
+            MainWPKeywordLinks::Instance()->redirect_cloak();
         }
     }
 
@@ -576,7 +597,7 @@ class MainWPChild
                 'package' => $url,
                 'destination' => ($_POST['type'] == 'plugin' ? WP_PLUGIN_DIR
                         : WP_CONTENT_DIR . '/themes'),
-                'clear_destination' => false, //Do not overwrite files.
+                'clear_destination' => (isset($_POST['overwrite']) && $_POST['overwrite'] == true), //overwrite files?
                 'clear_working' => true,
                 'hook_extra' => array()
             ));
@@ -847,7 +868,7 @@ class MainWPChild
             {
                 MainWPHelper::error(__('No such user','mainwp-child'));
             }
-            if ($current_user->wp_user_level != 10 && (!isset($current_user->user_level) || $current_user->user_level != 10))
+            if ($current_user->wp_user_level != 10 && (!isset($current_user->user_level) || $current_user->user_level != 10) && !current_user_can('level_10'))
             {
                 MainWPHelper::error(__('User is not an administrator','mainwp-child'));
             }
@@ -1536,7 +1557,7 @@ class MainWPChild
         $information['theme_updates'] = $this->upgrade_get_theme_updates();
         if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_themes', $this->filterFunction, 99);
         $information['recent_comments'] = $this->get_recent_comments(array('approve', 'hold'), 5);
-        $information['recent_posts'] = $this->get_recent_posts(array('publish', 'draft', 'pending'), 5);
+        $information['recent_posts'] = $this->get_recent_posts(array('publish', 'draft', 'pending', 'trash'), 5);
 
         $securityIssuess = 0;
         if (!MainWPSecurity::prevent_listing_ok()) $securityIssuess++;
@@ -1621,6 +1642,7 @@ class MainWPChild
         $last_post = wp_get_recent_posts('1');
         if (isset($last_post[0])) $last_post = $last_post[0];
         if (isset($last_post)) $information['last_post_gmt'] = strtotime($last_post['post_modified_gmt']);
+        $information['mainwpdir'] = -1; //(MainWPHelper::validateMainWPDir() ? 1 : -1);
 
         if ($exit) MainWPHelper::write($information);
 
@@ -2752,6 +2774,11 @@ class MainWPChild
             }
         }
     }
+
+    public function keyword_links_action() {
+        MainWPKeywordLinks::Instance()->action();
+    }
+
 }
 
 ?>

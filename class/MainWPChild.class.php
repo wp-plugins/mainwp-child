@@ -95,7 +95,7 @@ class MainWPChild
 
     public function admin_notice()
     {
-        //Admin Notiµce...
+        //Admin Notice...
         if (is_plugin_active('mainwp-child/mainwp-child.php')) {
             if (!get_option('mainwp_child_pubkey')) {
                 echo '<div class="error" style="text-align: center;"><p style="color: red; font-size: 16px; font-weight: bold;">Attention!</p>
@@ -1558,6 +1558,7 @@ class MainWPChild
         if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_themes', $this->filterFunction, 99);
         $information['recent_comments'] = $this->get_recent_comments(array('approve', 'hold'), 5);
         $information['recent_posts'] = $this->get_recent_posts(array('publish', 'draft', 'pending', 'trash'), 5);
+        $information['recent_pages'] = $this->get_recent_posts(array('publish', 'draft', 'pending', 'trash'), 5, 'page');
 
         $securityIssuess = 0;
         if (!MainWPSecurity::prevent_listing_ok()) $securityIssuess++;
@@ -2122,6 +2123,7 @@ class MainWPChild
 
     function get_recent_comments($pAllowedStatuses, $pCount)
     {
+        if (!function_exists('get_comment_author_url')) include_once(WPINC . '/comment-template.php');
         $allComments = array();
 
         foreach ($pAllowedStatuses as $status)
@@ -2138,6 +2140,12 @@ class MainWPChild
                     $outComment['id'] = $comment->comment_ID;
                     $outComment['status'] = wp_get_comment_status($comment->comment_ID);
                     $outComment['author'] = $comment->comment_author;
+                    $outComment['author_url'] = get_comment_author_url($comment->comment_ID);
+                    $outComment['author_ip'] = get_comment_author_IP($comment->comment_ID);
+                    $outComment['author_email'] = $email = apply_filters( 'comment_email', $comment->comment_author_email );
+                    if ((!empty($outComment['author_email'])) && ($outComment['author_email'] != '@')) {
+                        $outComment['author_email'] = '<a href="mailto:'.$outComment['author_email'].'">'.$outComment['author_email'].'</a>';
+                    }
                     $outComment['postId'] = $comment->comment_post_ID;
                     $outComment['postName'] = $post->post_title;
                     $outComment['comment_count'] = $post->comment_count;

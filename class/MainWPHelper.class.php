@@ -133,6 +133,8 @@ class MainWPHelper
 
         //Set custom fields
         $not_allowed = array('_slug', '_tags', '_edit_lock', '_selected_sites', '_selected_groups', '_selected_by', '_categories', '_edit_last', '_sticky');
+        $not_allowed[] = '_mainwp_boilerplate_sites_posts';
+
         foreach ($post_custom as $meta_key => $meta_values)
         {
             if (!in_array($meta_key, $not_allowed))

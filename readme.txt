@@ -6,7 +6,7 @@ Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.4
 Tested up to: 3.8
-Stable tag: 0.20
+Stable tag: 0.21
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,7 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 = 0.21 =
 * Fixed clone issue for some hosts with FTP settings
 * German translations added
+* Support for 1.0.0 major version of main dashboard
 
 = 0.20 =
 * Fixed BPS-conflict where plugins were not upgrading

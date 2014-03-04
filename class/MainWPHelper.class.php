@@ -73,8 +73,15 @@ class MainWPHelper
             $foundMatches = preg_match_all('/(<a[^>]+href=\"(.*?)\"[^>]*>)?(<img[^>\/]*src=\"((.*?)(png|gif|jpg|jpeg))\")/ix', $new_post['post_content'], $matches, PREG_SET_ORDER);
         }
         else 
-        {            
-            $foundMatches = 0;            
+        {
+			if (isset($new_post['post_date_gmt']) && !empty($new_post['post_date_gmt'])) {
+				$post_date_timestamp = strtotime($new_post['post_date_gmt']) + get_option('gmt_offset') * 60 * 60;
+				$new_post['post_date'] = date('Y-m-d H:i:s', $post_date_timestamp);
+				$new_post['post_status'] = ($post_date_timestamp <= current_time('timestamp')) ? 'publish' : 'future';
+			} else {
+				$new_post['post_status'] = 'publish';
+			}
+            $foundMatches = 0;
         }    
                 
         if ($foundMatches > 0)
@@ -134,6 +141,12 @@ class MainWPHelper
         //Set custom fields
         $not_allowed = array('_slug', '_tags', '_edit_lock', '_selected_sites', '_selected_groups', '_selected_by', '_categories', '_edit_last', '_sticky');
         $not_allowed[] = '_mainwp_boilerplate_sites_posts';
+		$not_allowed[] = '_ezine_post_keyword';
+		$not_allowed[] = '_ezine_post_display_sig';
+		$not_allowed[] = '_ezine_post_remove_link';
+		$not_allowed[] = '_ezine_post_grab_image';
+		$not_allowed[] = '_ezine_post_grab_image_placement';
+		$not_allowed[] = '_ezine_post_template_id';
 
         foreach ($post_custom as $meta_key => $meta_values)
         {

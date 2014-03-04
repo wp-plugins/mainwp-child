@@ -29,6 +29,7 @@ class MainWPKeywordLinks
         if (empty($this->keyword_links))
             $this->keyword_links = array();
         $this->siteurl = get_option('siteurl');
+		add_action('permalink_structure_changed', array(&$this, 'permalinkChanged'), 10, 2);
     }
     
     public function keywordLinksJS()
@@ -52,7 +53,102 @@ class MainWPKeywordLinks
         </script>
         <?php
     }
-    
+
+
+      public function permalinkChanged($old_struct, $new_struct)
+    {
+        if (get_option('mainwpKeywordLinks') != 1) {
+            if (get_option('mainwp_keyword_links_htaccess_set') == 'yes') {
+                $this->update_htaccess(false, true); // force clear
+            }
+        } else {
+            $this->update_htaccess(true); // force update
+        }
+    }
+
+    function mod_rewrite_rules($pRules)
+    {
+        $home_root = parse_url(home_url());
+        if (isset($home_root['path']))
+            $home_root = trailingslashit($home_root['path']);
+        else
+            $home_root = '/';
+
+        $rules = "<IfModule mod_rewrite.c>\n";
+        $rules .= "RewriteEngine On\n";
+        $rules .= "RewriteBase $home_root\n";
+
+        //add in the rules that don't redirect to WP's index.php (and thus shouldn't be handled by WP at all)
+        foreach ($pRules as $match => $query)
+        {
+            // Apache 1.3 does not support the reluctant (non-greedy) modifier.
+            $match = str_replace('.+?', '.+', $match);
+
+            $rules .= 'RewriteRule ^' . $match . ' ' . $home_root . $query . " [QSA,L]\n";
+        }
+
+        $rules .= "</IfModule>\n";
+
+        return $rules;
+    }
+
+    function update_htaccess($force_update = false, $force_clear = false)
+    {
+        if ($force_clear)
+            $this->do_update_htaccess(true);
+        else if ($force_update) {
+            return $this->do_update_htaccess();
+        } else {
+            if ('' ==  get_option( 'permalink_structure') && get_option('mainwp_keyword_links_htaccess_set') != 'yes')
+                $this->do_update_htaccess(); // need to update
+            else if ('' !=  get_option( 'permalink_structure') && get_option('mainwp_keyword_links_htaccess_set') == 'yes')
+                $this->do_update_htaccess(); // need to update
+        }
+        return true;
+    }
+
+    public static function clear_htaccess() {
+        include_once(ABSPATH . '/wp-admin/includes/misc.php');
+        $home_path = ABSPATH;
+        $htaccess_file = $home_path . '.htaccess';
+        if (function_exists('save_mod_rewrite_rules'))
+        {
+            $rules = explode("\n", '');
+            insert_with_markers($htaccess_file, 'MainWP Keyword Links Extension', $rules);
+        }
+        update_option('mainwp_keyword_links_htaccess_set', '');
+    }
+
+    public function do_update_htaccess($force_clear = false) {
+        if ($force_clear) {
+            self::clear_htaccess();
+            return true;
+        } else if ('' ==  get_option( 'permalink_structure')) {
+            include_once(ABSPATH . '/wp-admin/includes/misc.php');
+            $redirection_folder = $this->get_option('redirection_folder', 'goto');
+            if (empty($redirection_folder))
+                $redirection_folder = "goto";
+
+            //Create rewrite ruler
+            $rules = $this->mod_rewrite_rules(array($redirection_folder.'/'  => 'index.php'));
+            $home_path = ABSPATH;
+            $htaccess_file = $home_path . '.htaccess';
+            if (function_exists('save_mod_rewrite_rules'))
+            {
+                $rules = explode("\n", $rules);
+                insert_with_markers($htaccess_file, 'MainWP Keyword Links Extension', $rules);
+            }
+            update_option('mainwp_keyword_links_htaccess_set', 'yes');
+            return true;
+        } else {
+            self::clear_htaccess();
+            return true;
+        }
+        return false;
+    }
+
+
+
     public function saveClickCallback()
     {
             if ( ! wp_verify_nonce($_POST['nonce'], 'keywordLinksSaveClick') )
@@ -148,12 +244,19 @@ class MainWPKeywordLinks
             if ($disable == 1)
                 return $content;      
             
-            $paths_blocked = $this->get_option('mainwp_kwl_do_not_link_paths_blocked', array());            
+            $paths_blocked = $this->get_option('mainwp_kwl_do_not_link_paths_blocked', array());
             if (is_array($paths_blocked)) {
                 $permalink = get_permalink($post->ID);
                 $url_paths = str_replace($this->siteurl,'', $permalink);
+				$url_paths = trim($url_paths, '/');
+
+				// check full path blocked
+				if (in_array($url_paths, $paths_blocked))
+					return $content;
+
                 $url_paths = explode('/', $url_paths);
                 foreach($url_paths as $path) {
+					// check partial paths blocked
                     if (!empty($path) && in_array($path, $paths_blocked)) {
                         return $content;
                     }
@@ -180,9 +283,9 @@ class MainWPKeywordLinks
         else
             $links = $this->get_available_links();   
         
-//        print_r($this->keyword_links);
-//        echo "======";
-//        print_r($links);
+        // print_r($this->keyword_links);
+       // echo "======";
+       // print_r($links);
         
         if (empty($links))
             return $content;
@@ -323,7 +426,7 @@ class MainWPKeywordLinks
         if ($replace_max === 0 || $replace_max_keyword === 0)
             return $links;
         // Post types enabled to create links
-        $post_types = (array) $this->get_option('enable_post_type_link', array('post', 'page'));
+        $post_types = (array) $this->get_option('enable_post_type_link');
         foreach ($post_types as $post_type) {
             if ($post_type == $post->post_type) {
                 $categories = get_the_terms($post->ID, 'category');
@@ -356,7 +459,7 @@ class MainWPKeywordLinks
     
    
      public function get_post_keywords($post_type, $cats = null) {
-        global $wpdb;
+        global $wpdb, $post;
         $join = '';
         $where = '';
         if (is_array($cats) && count($cats) > 0) {
@@ -370,17 +473,19 @@ class MainWPKeywordLinks
             return array();
         $paths_blocked = $this->get_option('mainwp_kwl_do_not_link_paths_blocked', array());
         foreach ($results as $result) {
+			if ($result->ID == $post->ID)
+                continue; // do not link to myself
             if (in_array($result->post_name, (array) $paths_blocked))
                 continue;
             $link = new stdClass;
             // This is on-fly link so have not ID
             //$link->id = $result->ID;
             $link->name = $result->post_title;
-            if ($result->post_type == 'page')
-                $link->destination_url = get_permalink($result->ID);
-            else
-                $link->destination_url = $result->guid;
-            //$link->destination_url = get_post_meta($result->ID, '_mainwp_kl_post_link', $link->destination_url);
+            //if ($result->post_type == 'page')
+            //    $link->destination_url = get_permalink($result->ID);
+            //else
+            //    $link->destination_url = $result->guid;
+            $link->destination_url = get_permalink($result->ID);
             $link->cloak_path = '';
             $link->keyword = ( $this->get_option('post_match_title') == 1 ? $result->post_title . ',' : '' ) . $result->meta_value;
             $link->link_target = '';
@@ -485,6 +590,9 @@ class MainWPKeywordLinks
     public function action() {
         $result = array();
         switch ($_POST['action']) {
+			case 'refresh_data':
+                $result = $this->refresh_data();
+			break;
             case 'import_link':
             case 'add_link':
                 $result = $this->edit_link();
@@ -510,13 +618,24 @@ class MainWPKeywordLinks
         }        
         MainWPHelper::write($result);
     }
-    
+	public function refresh_data()
+    {
+        $result = array();
+        if (isset($_POST['clear_all'])) {
+            $cleared1 = update_option('mainwp_kwl_keyword_links', '');
+            $cleared2 = update_option('mainwp_kwl_options', '');
+            if ($cleared1 || $cleared2)
+                $return['status'] = 'SUCCESS';
+        }
+        return $return;
+    }
+
     public function delete_link() {
         $result = array();
         if (!empty($_POST['link_id'])) {
             $del_link = $this->get_link($_POST['link_id'], false);
             if ($del_link) {
-                if ($del_link->type == 2)            
+                if ($del_link->type == 2 || $del_link->type == 3)
                     $deleted = delete_post_meta($del_link->post_id, '_mainwp_kwl_specific_link_id'); 
                 if ($this->set_link($del_link->id, '')) 
                     $return['status'] = 'SUCCESS';             
@@ -599,9 +718,12 @@ class MainWPKeywordLinks
                     'enable_post_type_link' => $_POST['enable_post_type_link']
             );
             update_option('mainwpKeywordLinks', 1); // enable extension functions            
-            if (update_option('mainwp_kwl_options', $this->config))
-                $return['status'] = 'SUCCESS';     
-            
+            if (update_option('mainwp_kwl_options', $this->config)) {
+                $return['status'] = 'SUCCESS';
+			}
+
+			// force update
+            $this->update_htaccess(true);
             return $return;
     }
     

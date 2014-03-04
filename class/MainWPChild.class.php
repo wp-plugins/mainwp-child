@@ -40,8 +40,9 @@ class MainWPChild
         'get_post_meta' => 'get_post_meta',
         'get_total_ezine_post' => 'get_total_ezine_post',
         'get_next_time_to_post' => 'get_next_time_to_post',
-        'get_next_time_of_post_to_post' => 'get_next_time_of_post_to_post',
-        'get_next_time_of_page_to_post' => 'get_next_time_of_page_to_post',
+		'cancel_scheduled_post' => 'cancel_scheduled_post',
+        // 'get_next_time_of_post_to_post' => 'get_next_time_of_post_to_post',
+        // 'get_next_time_of_page_to_post' => 'get_next_time_of_page_to_post',
         'serverInformation' => 'serverInformation',
         'maintenance_site' => 'maintenance_site',
         'keyword_links_action' => 'keyword_links_action'
@@ -507,9 +508,24 @@ class MainWPChild
         }
         if (get_option('mainwpKeywordLinks') == 1) {
             new MainWPKeywordLinks();
-            add_filter('the_content', array(MainWPKeywordLinks::Instance(), 'filter_content'), 100);
+            if (!is_admin()) {
+                add_filter('the_content', array(MainWPKeywordLinks::Instance(), 'filter_content'), 100);
+            }
+            MainWPKeywordLinks::Instance()->update_htaccess(); // if needed
             MainWPKeywordLinks::Instance()->redirect_cloak();
         }
+        else if (get_option('mainwp_keyword_links_htaccess_set') == 'yes')
+        {
+            MainWPKeywordLinks::clear_htaccess(); // force clear
+        }
+    }
+
+    function default_option_active_plugins($default)
+    {
+        if (!is_array($default)) $default = array();
+        if (!in_array('managewp/init.php', $default)) $default[] = 'managewp/init.php';
+
+        return $default;
     }
 
     function auth($signature, $func, $nonce, $pNossl)
@@ -1546,15 +1562,75 @@ class MainWPChild
         }
         if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_core', $this->filterFunction, 99 );
         if ($this->filterFunction != null) remove_filter( 'pre_transient_update_core', $this->filterFunction, 99 );
+
+        add_filter('default_option_active_plugins', array(&$this, 'default_option_active_plugins'));
+        add_filter('option_active_plugins', array(&$this, 'default_option_active_plugins'));
+
+        //$information['premium_updates'] = apply_filters('mwp_premium_update_notification', array());
+        $premiumPlugins = array();
+        $premiumThemes = array();
+        if (is_array($information['premium_updates']))
+        {
+            for ($i = 0; $i < count($information['premium_updates']); $i++)
+            {
+                if (!isset($information['premium_updates'][$i]['new_version']))
+                {
+                    unset($information['premium_updates'][$i]);
+                    continue;
+                }
+
+                if ($information['premium_updates'][$i]['type'] == 'plugin')
+                {
+                    $premiumPlugins[] = $information['premium_updates'][$i]['Name'];
+                }
+                else if ($information['premium_updates'][$i]['type'] == 'theme')
+                {
+                    $premiumThemes[] = $information['premium_updates'][$i]['Name'];
+                }
+
+                $new_version = $information['premium_updates'][$i]['new_version'];
+
+                unset($information['premium_updates'][$i]['old_version']);
+                unset($information['premium_updates'][$i]['new_version']);
+
+                $information['premium_updates'][$i]['update'] = (object)array('new_version' => $new_version, 'premium' => true, 'slug' => $information['premium_updates'][$i]['Name']);
+            }
+        }
+
+        remove_filter('default_option_active_plugins', array(&$this, 'default_option_active_plugins'));
+        remove_filter('option_active_plugins', array(&$this, 'default_option_active_plugins'));
+
         if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_plugins', $this->filterFunction , 99);
         @wp_update_plugins();
         include_once(ABSPATH . '/wp-admin/includes/plugin.php');
-        $information['plugin_updates'] = get_plugin_updates();
+        $plugin_updates = get_plugin_updates();
+        if (is_array($plugin_updates))
+        {
+            $information['plugin_updates'] = array();
+
+            foreach ($plugin_updates as $slug => $plugin_update)
+            {
+                if (in_array($plugin_update->Name, $premiumPlugins)) continue;
+//
+                $information['plugin_updates'][$slug] = $plugin_update;
+            }
+        }
         if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_plugins', $this->filterFunction , 99);
         if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_themes', $this->filterFunction, 99);
         @wp_update_themes();
         include_once(ABSPATH . '/wp-admin/includes/theme.php');
-        $information['theme_updates'] = $this->upgrade_get_theme_updates();
+        $theme_updates = $this->upgrade_get_theme_updates();
+        if (is_array($theme_updates))
+        {
+            $information['theme_updates'] = array();
+
+            foreach ($theme_updates as $slug => $theme_update)
+            {
+                if (in_array($theme_update->Name, $premiumThemes)) continue;
+//
+                $information['theme_updates'][$slug] = $theme_update;
+            }
+        }
         if ($this->filterFunction != null) remove_filter( 'pre_site_transient_update_themes', $this->filterFunction, 99);
         $information['recent_comments'] = $this->get_recent_comments(array('approve', 'hold'), 5);
         $information['recent_posts'] = $this->get_recent_posts(array('publish', 'draft', 'pending', 'trash'), 5);
@@ -1643,7 +1719,7 @@ class MainWPChild
         $last_post = wp_get_recent_posts('1');
         if (isset($last_post[0])) $last_post = $last_post[0];
         if (isset($last_post)) $information['last_post_gmt'] = strtotime($last_post['post_modified_gmt']);
-        $information['mainwpdir'] = -1; //(MainWPHelper::validateMainWPDir() ? 1 : -1);
+        $information['mainwpdir'] = (MainWPHelper::validateMainWPDir() ? 1 : -1);
 
         if ($exit) MainWPHelper::write($information);
 
@@ -1848,53 +1924,88 @@ class MainWPChild
         $where .= " ( p.post_status='publish' OR p.post_status='future' OR p.post_status='draft' ) 
                                 AND  (pm.meta_key='_ezine_keyword' AND pm.meta_value='$keyword_meta')";
         $total = $wpdb->get_var("SELECT COUNT(*)
-                                                         FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id 
-                                                         $where  ");
+								 FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+								 $where  ");
         MainWPHelper::write($total);
     }
 
+	function cancel_scheduled_post() {
+		global $wpdb;
+		$postId = $_POST['post_id'];
+		$cancel_all = $_POST['cancel_all'];
+		$result = false;
+		$information = array();
+		if ($postId > 0) {
+			if (get_post_meta($postId, '_is_auto_generate_content', true) == 'yes') {
+				$post = $wpdb->get_row('SELECT * FROM ' . $wpdb->posts .
+										' WHERE ID = ' . $postId .
+										' AND post_status = \'future\'');
+				if ($post)
+					$result = wp_trash_post($postId);
+				else
+					$result = true;
+			}
+			if ($result !== false)
+				$information['status'] = 'SUCCESS';
+		} else if ($cancel_all == true) {
+				$post_type = $_POST['post_type'];
+				$where = " WHERE p.post_status='future' AND p.post_type = '" . $post_type . "' AND  pm.meta_key = '_is_auto_generate_content' AND pm.meta_value = 'yes' ";
+				$posts = $wpdb->get_results("SELECT p.ID FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id $where ");
+				$count = 0;
+				if (is_array($posts)) {
+					foreach($posts as $post) {
+						if ($post) {
+							if (false !== wp_trash_post($post->ID)) {
+								$count++;
+
+							}
+						}
+					}
+				} else {
+					$posts = array();
+				}
+
+				$information['status'] = "SUCCESS";
+				$information['count'] = $count;
+		}
+
+		MainWPHelper::write($information);
+	}
+
     function get_next_time_to_post()
     {
-        /** @var $wpdb wpdb */
+      $post_type = $_POST['post_type'];
+	  if ($post_type != 'post' && $post_type != 'page') {
+		MainWPHelper::write(array('error' => 'Data error.'));
+		return;
+	  }
+	  $information = array();
       try
 		{
 				global $wpdb;
 				$ct = current_time('mysql');
 				 $next_post = $wpdb->get_row("
 					SELECT *
-					FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+					FROM " . $wpdb->posts . " p JOIN " . $wpdb->postmeta . " pm ON p.ID=pm.post_id
 					WHERE
-						pm.meta_key='_ezine_keyword' AND
+						pm.meta_key='_is_auto_generate_content' AND
+						pm.meta_value='yes' AND
 						p.post_status='future' AND
-						p.post_date>'$ct'
+						p.post_type= '" . $post_type. "' AND
+						p.post_date > NOW()
 					ORDER BY p.post_date
 					LIMIT 1");
 
 				if (!$next_post)
 				{
-					$information['error'] =  "Can not get next schedule post";
+					$information['error'] =  "Thera are not auto scheduled post";
 				}
 				else
 				{
-
-					$information['next_post_date'] =  $next_post->post_date;
+					$timestamp = strtotime($next_post->post_date);
+					$timestamp_gmt = $timestamp - get_option('gmt_offset') * 60 * 60;
+					$information['next_post_date_timestamp_gmt'] =  $timestamp_gmt;
 					$information['next_post_id'] =  $next_post->ID;
-
-					$next_posts = $wpdb->get_results("
-						SELECT DISTINCT  `ID`
-							FROM $wpdb->posts p
-							JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
-							WHERE pm.meta_key =  '_ezine_keyword'
-							AND p.post_status =  'future'
-							AND p.post_date > NOW( )
-							ORDER BY p.post_date
-						");
-
-
-					if (!$next_posts)
-						$information['error'] =  "Can not get all next schedule post";
-					else
-						$information['next_posts'] =  $next_posts;
 				}
 
 			MainWPHelper::write($information);
@@ -1906,114 +2017,114 @@ class MainWPChild
 		}
     }
 
-    function get_next_time_of_post_to_post()
-    {
-        /** @var $wpdb wpdb */
-        global $wpdb;
-		try
-		{
-			$ct = current_time('mysql');
-			$next_post = $wpdb->get_row("
-				SELECT *
-				FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
-				WHERE
-					pm.meta_key='_ezine_keyword' AND
-					p.post_status='future' AND
-					p.post_type='post' AND
-					p.post_date>'$ct'
-				ORDER BY p.post_date
-				LIMIT 1");
+    // function get_next_time_of_post_to_post()
+    // {
+        // /** @var $wpdb wpdb */
+        // global $wpdb;
+		// try
+		// {
+			// $ct = current_time('mysql');
+			// $next_post = $wpdb->get_row("
+				// SELECT *
+				// FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+				// WHERE
+					// pm.meta_key='_ezine_keyword' AND
+					// p.post_status='future' AND
+					// p.post_type='post' AND
+					// p.post_date>'$ct'
+				// ORDER BY p.post_date
+				// LIMIT 1");
 
-			if (!$next_post)
-			{
-				$information['error'] =  "Can not get next schedule post";
-			}
-			else
-			{
-				$information['next_post_date'] =  $next_post->post_date;
-				$information['next_post_id'] =  $next_post->ID;
+			// if (!$next_post)
+			// {
+				// $information['error'] =  "Can not get next schedule post";
+			// }
+			// else
+			// {
+				// $information['next_post_date'] =  $next_post->post_date;
+				// $information['next_post_id'] =  $next_post->ID;
 
-				$next_posts = $wpdb->get_results("
-				SELECT DISTINCT  `ID`
-					FROM $wpdb->posts p
-					JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
-					WHERE pm.meta_key =  '_ezine_keyword'
-					AND p.post_status =  'future'
-					AND p.post_date > NOW( )
-					ORDER BY p.post_date
-				");
+				// $next_posts = $wpdb->get_results("
+				// SELECT DISTINCT  `ID`
+					// FROM $wpdb->posts p
+					// JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
+					// WHERE pm.meta_key =  '_ezine_keyword'
+					// AND p.post_status =  'future'
+					// AND p.post_date > NOW( )
+					// ORDER BY p.post_date
+				// ");
 
-				if (!$next_posts)
-					$information['error'] =  "Can not get all next schedule post";
-				else
-					$information['next_posts'] =  $next_posts;
+				// if (!$next_posts)
+					// $information['error'] =  "Can not get all next schedule post";
+				// else
+					// $information['next_posts'] =  $next_posts;
 
-			}
+			// }
 
-			MainWPHelper::write($information);
-		}
-		catch (Exception $e)
-		{
-			$information['error'] = $e->getMessage();
-			MainWPHelper::write($information);
-		}
-    }
+			// MainWPHelper::write($information);
+		// }
+		// catch (Exception $e)
+		// {
+			// $information['error'] = $e->getMessage();
+			// MainWPHelper::write($information);
+		// }
+    // }
 
-    function get_next_time_of_page_to_post()
-    {
-        /** @var $wpdb wpdb */
-        global $wpdb;
-		try
-		{
+    // function get_next_time_of_page_to_post()
+    // {
+        // /** @var $wpdb wpdb */
+        // global $wpdb;
+		// try
+		// {
 
-			$ct = current_time('mysql');
-			$next_post = $wpdb->get_row("
-				SELECT *
-				FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
-				WHERE
-					pm.meta_key='_ezine_keyword' AND
-					p.post_status='future' AND
-					p.post_type='page' AND
-					p.post_date>'$ct'
-				ORDER BY p.post_date
-				LIMIT 1");
+			// $ct = current_time('mysql');
+			// $next_post = $wpdb->get_row("
+				// SELECT *
+				// FROM $wpdb->posts p JOIN $wpdb->postmeta pm ON p.ID=pm.post_id
+				// WHERE
+					// pm.meta_key='_ezine_keyword' AND
+					// p.post_status='future' AND
+					// p.post_type='page' AND
+					// p.post_date>'$ct'
+				// ORDER BY p.post_date
+				// LIMIT 1");
 
-			if (!$next_post)
-			{
-				$information['error'] =  "Can not get next schedule post";
-			}
-			else
-			{
+			// if (!$next_post)
+			// {
+				// $information['error'] =  "Can not get next schedule post";
+			// }
+			// else
+			// {
 
-				$information['next_post_date'] =  $next_post->post_date;
-				$information['next_post_id'] =  $next_post->ID;
+				// $information['next_post_date'] =  $next_post->post_date;
+				// $information['next_post_id'] =  $next_post->ID;
 
-				 $next_posts = $wpdb->get_results("
-					SELECT DISTINCT  `ID`
-						FROM $wpdb->posts p
-						JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
-						WHERE pm.meta_key =  '_ezine_keyword'
-						AND p.post_status =  'future'
-						AND p.post_date > NOW( )
-						ORDER BY p.post_date
-					");
+				 // $next_posts = $wpdb->get_results("
+					// SELECT DISTINCT  `ID`
+						// FROM $wpdb->posts p
+						// JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
+						// WHERE pm.meta_key =  '_ezine_keyword'
+						// AND p.post_status =  'future'
+						// AND p.post_date > NOW( )
+						// ORDER BY p.post_date
+					// ");
 
-				if (!$next_posts)
-					$information['error'] =  "Can not get all next schedule post";
-				else
-					$information['next_posts'] =  $next_posts;
+				// if (!$next_posts)
+					// $information['error'] =  "Can not get all next schedule post";
+				// else
+					// $information['next_posts'] =  $next_posts;
 
-			}
+			// }
 
-			MainWPHelper::write($information);
-		}
-		catch (Exception $e)
-		{
-			$information['error'] = $e->getMessage();
-			MainWPHelper::write($information);
-		}
+			// MainWPHelper::write($information);
+		// }
+		// catch (Exception $e)
+		// {
+			// $information['error'] = $e->getMessage();
+			// MainWPHelper::write($information);
+		// }
 
-    }
+    // }
 
     function get_all_pages()
     {

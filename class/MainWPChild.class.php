@@ -1704,7 +1704,7 @@ class MainWPChild
             $conflicts = array();
             if (count($themeConflicts) > 0)
             {
-                $theme = get_current_theme();
+                $theme = wp_get_theme()->get('Name');
                 foreach ($themeConflicts as $themeConflict)
                 {
                    if ($theme == $themeConflict)
@@ -1716,7 +1716,7 @@ class MainWPChild
             if (count($conflicts) > 0) $information['themeConflicts'] = $conflicts;
         }
 
-        $last_post = wp_get_recent_posts('1');
+        $last_post = wp_get_recent_posts(array( 'numberposts' => absint('1')));
         if (isset($last_post[0])) $last_post = $last_post[0];
         if (isset($last_post)) $information['last_post_gmt'] = strtotime($last_post['post_modified_gmt']);
         $information['mainwpdir'] = (MainWPHelper::validateMainWPDir() ? 1 : -1);
@@ -2296,7 +2296,7 @@ class MainWPChild
             if (empty($wp_filesystem)) $wp_filesystem = new WP_Filesystem_Direct(null);
             $themeUpgrader = new Theme_Upgrader();
 
-            $theme_name = get_current_theme();
+            $theme_name = wp_get_theme()->get('Name');
             $themes = explode('||', $theme);
 
             foreach ($themes as $idx => $themeToDelete)
@@ -2337,7 +2337,7 @@ class MainWPChild
         $themes = get_themes(); //todo: deprecated, use wp_get_themes
         if (is_array($themes))
         {
-            $theme_name = get_current_theme();
+            $theme_name = wp_get_theme()->get('Name');
 
             foreach ($themes as $theme)
             {

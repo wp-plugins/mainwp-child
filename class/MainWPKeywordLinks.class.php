@@ -33,8 +33,8 @@ class MainWPKeywordLinks
     }
     
     public function keywordLinksJS()
-    {
-        if (!is_admin() )
+    {	
+        if (!is_admin() && get_option('mainwp_kwl_enable_statistic'))
         {                
             wp_enqueue_script('jquery');
             wp_enqueue_script('keywordLinks', plugins_url('/js/keywordlinks.js', dirname(__FILE__)));
@@ -53,19 +53,19 @@ class MainWPKeywordLinks
         </script>
         <?php
     }
-
-
+	
+	
       public function permalinkChanged($old_struct, $new_struct)
     {
         if (get_option('mainwpKeywordLinks') != 1) {
             if (get_option('mainwp_keyword_links_htaccess_set') == 'yes') {
-                $this->update_htaccess(false, true); // force clear
+                $this->update_htaccess(false, true); // force clear               
             }
-        } else {
-            $this->update_htaccess(true); // force update
+        } else {            
+            $this->update_htaccess(true); // force update        
         }
     }
-
+    
     function mod_rewrite_rules($pRules)
     {
         $home_root = parse_url(home_url());
@@ -91,13 +91,13 @@ class MainWPKeywordLinks
 
         return $rules;
     }
-
+    
     function update_htaccess($force_update = false, $force_clear = false)
-    {
+    {      
         if ($force_clear)
             $this->do_update_htaccess(true);
         else if ($force_update) {
-            return $this->do_update_htaccess();
+            return $this->do_update_htaccess();            
         } else {
             if ('' ==  get_option( 'permalink_structure') && get_option('mainwp_keyword_links_htaccess_set') != 'yes')
                 $this->do_update_htaccess(); // need to update
@@ -106,7 +106,7 @@ class MainWPKeywordLinks
         }
         return true;
     }
-
+    
     public static function clear_htaccess() {
         include_once(ABSPATH . '/wp-admin/includes/misc.php');
         $home_path = ABSPATH;
@@ -118,17 +118,17 @@ class MainWPKeywordLinks
         }
         update_option('mainwp_keyword_links_htaccess_set', '');
     }
-
-    public function do_update_htaccess($force_clear = false) {
+    
+    public function do_update_htaccess($force_clear = false) {    
         if ($force_clear) {
             self::clear_htaccess();
             return true;
         } else if ('' ==  get_option( 'permalink_structure')) {
             include_once(ABSPATH . '/wp-admin/includes/misc.php');
-            $redirection_folder = $this->get_option('redirection_folder', 'goto');
+            $redirection_folder = $this->get_option('redirection_folder', 'goto');            
             if (empty($redirection_folder))
                 $redirection_folder = "goto";
-
+            
             //Create rewrite ruler
             $rules = $this->mod_rewrite_rules(array($redirection_folder.'/'  => 'index.php'));
             $home_path = ABSPATH;
@@ -138,7 +138,7 @@ class MainWPKeywordLinks
                 $rules = explode("\n", $rules);
                 insert_with_markers($htaccess_file, 'MainWP Keyword Links Extension', $rules);
             }
-            update_option('mainwp_keyword_links_htaccess_set', 'yes');
+            update_option('mainwp_keyword_links_htaccess_set', 'yes');  
             return true;
         } else {
             self::clear_htaccess();
@@ -146,9 +146,9 @@ class MainWPKeywordLinks
         }
         return false;
     }
-
-
-
+    
+	
+    
     public function saveClickCallback()
     {
             if ( ! wp_verify_nonce($_POST['nonce'], 'keywordLinksSaveClick') )
@@ -244,16 +244,16 @@ class MainWPKeywordLinks
             if ($disable == 1)
                 return $content;      
             
-            $paths_blocked = $this->get_option('mainwp_kwl_do_not_link_paths_blocked', array());
+            $paths_blocked = $this->get_option('mainwp_kwl_do_not_link_paths_blocked', array());            			
             if (is_array($paths_blocked)) {
                 $permalink = get_permalink($post->ID);
                 $url_paths = str_replace($this->siteurl,'', $permalink);
 				$url_paths = trim($url_paths, '/');
-
+				
 				// check full path blocked
 				if (in_array($url_paths, $paths_blocked))
 					return $content;
-
+				
                 $url_paths = explode('/', $url_paths);
                 foreach($url_paths as $path) {
 					// check partial paths blocked
@@ -426,7 +426,7 @@ class MainWPKeywordLinks
         if ($replace_max === 0 || $replace_max_keyword === 0)
             return $links;
         // Post types enabled to create links
-        $post_types = (array) $this->get_option('enable_post_type_link');
+        $post_types = (array) $this->get_option('enable_post_type_link');        
         foreach ($post_types as $post_type) {
             if ($post_type == $post->post_type) {
                 $categories = get_the_terms($post->ID, 'category');
@@ -547,8 +547,9 @@ class MainWPKeywordLinks
             }   
         }            
         
-        if (!empty($destination_url)){                       
-            $this->add_statistic($link_id, $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_REFERER']);                         
+        if (!empty($destination_url)){
+			if (get_option('mainwp_kwl_enable_statistic'))		
+				$this->add_statistic($link_id, $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_REFERER']);                         
             wp_redirect($destination_url);
             die();
         }            
@@ -590,6 +591,9 @@ class MainWPKeywordLinks
     public function action() {
         $result = array();
         switch ($_POST['action']) {
+			case 'enable_stats':
+                $result = $this->enable_stats();
+			break;
 			case 'refresh_data':
                 $result = $this->refresh_data();
 			break;
@@ -618,24 +622,34 @@ class MainWPKeywordLinks
         }        
         MainWPHelper::write($result);
     }
+	
+	public function enable_stats()
+    {
+		$result = array();
+        $enable_stats = intval($_POST['enablestats']);
+        if (update_option('mainwp_kwl_enable_statistic', $enable_stats))
+			$return['status'] = 'SUCCESS';                      
+        return $return;
+    }
+	
 	public function refresh_data()
     {
         $result = array();
         if (isset($_POST['clear_all'])) {
-            $cleared1 = update_option('mainwp_kwl_keyword_links', '');
-            $cleared2 = update_option('mainwp_kwl_options', '');
+            $cleared1 = update_option('mainwp_kwl_keyword_links', '');   
+            $cleared2 = update_option('mainwp_kwl_options', '');    
             if ($cleared1 || $cleared2)
-                $return['status'] = 'SUCCESS';
-        }
+                $return['status'] = 'SUCCESS';             
+        }    
         return $return;
     }
-
+	
     public function delete_link() {
         $result = array();
         if (!empty($_POST['link_id'])) {
             $del_link = $this->get_link($_POST['link_id'], false);
             if ($del_link) {
-                if ($del_link->type == 2 || $del_link->type == 3)
+                if ($del_link->type == 2 || $del_link->type == 3)                     
                     $deleted = delete_post_meta($del_link->post_id, '_mainwp_kwl_specific_link_id'); 
                 if ($this->set_link($del_link->id, '')) 
                     $return['status'] = 'SUCCESS';             
@@ -719,11 +733,11 @@ class MainWPKeywordLinks
             );
             update_option('mainwpKeywordLinks', 1); // enable extension functions            
             if (update_option('mainwp_kwl_options', $this->config)) {
-                $return['status'] = 'SUCCESS';
+                $return['status'] = 'SUCCESS';    
 			}
-
-			// force update
-            $this->update_htaccess(true);
+			
+			// force update   
+            $this->update_htaccess(true);				            
             return $return;
     }
     

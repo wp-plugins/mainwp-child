@@ -1,4 +1,5 @@
 <?php
+
 define('MAINWP_CHILD_NR_OF_COMMENTS', 50);
 define('MAINWP_CHILD_NR_OF_PAGES', 50);
 
@@ -159,6 +160,10 @@ class MainWPChild
         if ($sitesToClone != '0')
         {
             MainWPClone::init_menu();
+        }
+        else
+        {
+            MainWPClone::init_restore_menu();
         }
     }
 
@@ -443,11 +448,15 @@ class MainWPChild
 
         if (isset($_GET['test']))
         {
-            //error_reporting(E_ALL);
-            //ini_set('display_errors', TRUE);
-            //ini_set('display_startup_errors', TRUE);
-            //echo '<pre>';
-            //die('</pre>');
+            error_reporting(E_ALL);
+            ini_set('display_errors', TRUE);
+            ini_set('display_startup_errors', TRUE);
+//            echo '<pre>';
+//            $_POST['type'] = 'plugin';
+//            $_POST['list'] = 'akismet';
+//            $this->upgradePluginTheme();
+            echo 'test';
+            die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -760,6 +769,8 @@ class MainWPChild
 
         $information = array();
         $information['upgrades'] = array();
+        $mwp_premium_updates_todo = array();
+        $mwp_premium_updates_todo_slugs = array();
         if (isset($_POST['type']) && $_POST['type'] == 'plugin')
         {
             include_once(ABSPATH . '/wp-admin/includes/update.php');
@@ -769,6 +780,24 @@ class MainWPChild
             $information['plugin_updates'] = get_plugin_updates();
 
             $plugins = explode(',', urldecode($_POST['list']));
+            $premiumPlugins = array();
+            $premiumUpdates = get_option('mainwp_premium_updates');
+            if (is_array($premiumUpdates))
+            {
+                $newPlugins = array();
+                foreach ($plugins as $plugin)
+                {
+                    if (in_array($plugin, $premiumUpdates))
+                    {
+                        $premiumPlugins[] = $plugin;
+                    }
+                    else
+                    {
+                        $newPlugins[] = $plugin;
+                    }
+                }
+                $plugins = $newPlugins;
+            }
             if (count($plugins) > 0)
             {
                 //@see wp-admin/update.php
@@ -793,7 +822,26 @@ class MainWPChild
                     MainWPHelper::error(__('Bad request','mainwp-child'));
                 }
             }
-            else
+            if (count($premiumPlugins) > 0)
+            {
+                $mwp_premium_updates = apply_filters('mwp_premium_perform_update', array());
+                foreach ($premiumPlugins as $premiumPlugin)
+                {
+                    foreach ($mwp_premium_updates as $key => $update)
+                    {
+                        if (strcmp($update['name'], $premiumPlugin['name']) == 0)
+                        {
+                            $mwp_premium_updates_todo[$key] = $update;
+                            $mwp_premium_updates_todo_slugs[] = $update['name'];
+                        }
+                    }
+                }
+                unset($mwp_premium_updates);
+
+                $premiumUpgrader = new Plugin_Upgrader(new Bulk_Plugin_Upgrader_Skin(compact('nonce', 'url')));
+            }
+
+            if (count($plugins) <= 0 && count($premiumPlugins) <= 0)
             {
                 MainWPHelper::error(__('Bad request','mainwp-child'));
             }
@@ -808,6 +856,25 @@ class MainWPChild
             include_once(ABSPATH . '/wp-admin/includes/theme.php');
             $information['theme_updates'] = $this->upgrade_get_theme_updates();
             $themes = explode(',', $_POST['list']);
+            $premiumThemes = array();
+            $premiumUpdates = get_option('mainwp_premium_updates');
+            if (is_array($premiumUpdates))
+            {
+                $newThemes = array();
+                foreach ($themes as $theme)
+                {
+                    if (in_array($theme, $premiumUpdates))
+                    {
+                        $premiumThemes[] = $theme;
+                    }
+                    else
+                    {
+                        $newThemes[] = $theme;
+                    }
+                }
+                $themes = $newThemes;
+            }
+
             if (count($themes) > 0)
             {
                 //@see wp-admin/update.php
@@ -832,7 +899,27 @@ class MainWPChild
                     MainWPHelper::error(__('Bad request','mainwp-child'));
                 }
             }
-            else
+            if (count($premiumThemes) > 0)
+            {
+                $mwp_premium_updates = apply_filters('mwp_premium_perform_update', array());
+                $mwp_premium_updates_todo = array();
+                $mwp_premium_updates_todo_slugs = array();
+                foreach ($premiumThemes as $premiumTheme)
+                {
+                    foreach ($mwp_premium_updates as $key => $update)
+                    {
+                        if (strcmp($update['name'], $premiumTheme['name']) == 0)
+                        {
+                            $mwp_premium_updates_todo[$key] = $update;
+                            $mwp_premium_updates_todo_slugs[] = $update['name'];
+                        }
+                    }
+                }
+                unset($mwp_premium_updates);
+
+                $premiumUpgrader = new Theme_Upgrader(new Bulk_Theme_Upgrader_Skin(compact('nonce', 'url')));
+            }
+            if (count($themes) <= 0 && count($premiumThemes) <= 0)
             {
                 MainWPHelper::error(__('Bad request','mainwp-child'));
             }
@@ -843,6 +930,70 @@ class MainWPChild
         {
             MainWPHelper::error(__('Bad request','mainwp-child'));
         }
+
+//        if (count($mwp_premium_updates_todo) > 0)
+//        {
+//            //Upgrade via WP
+//            //@see wp-admin/update.php
+//            $result = $premiumUpgrader->bulk_upgrade($mwp_premium_updates_todo_slugs);
+//            if (!empty($result))
+//            {
+//                foreach ($result as $plugin => $info)
+//                {
+//                    if (!empty($info))
+//                    {
+//                        $information['upgrades'][$plugin] = true;
+//
+//                        foreach ($mwp_premium_updates_todo as $key => $update)
+//                        {
+//                            if (strcmp($update['name'], $plugin) == 0)
+//                            {
+//                                unset($mwp_premium_updates_todo[$key]);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            //Upgrade via callback
+//            foreach ($mwp_premium_updates_todo as $update)
+//            {
+//                if (isset($update['url']))
+//                {
+//                    $installer = new WP_Upgrader();
+//                    //@see wp-admin/includes/class-wp-upgrader.php
+//                    $result = $installer->run(array(
+//                        'package' => $update['url'],
+//                        'destination' => ($update['type'] == 'plugin' ? WP_PLUGIN_DIR : WP_CONTENT_DIR . '/themes'),
+//                        'clear_destination' => true,
+//                        'clear_working' => true,
+//                        'hook_extra' => array()
+//                    ));
+//                    $information['upgrades'][$update['name']] = (!is_wp_error($result) && !empty($result));
+//                }
+//                else if (isset($update['callback']))
+//                {
+//                    if (is_array($update['callback']) && isset($update['callback'][0]) && isset($update['callback'][1]))
+//                    {
+//                        $update_result = @call_user_func(array($update['callback'][0], $update['callback'][1] ));
+//                        $information['upgrades'][$update['name']] = $update_result && true;
+//                    }
+//                    else if (is_string($update['callback']))
+//                    {
+//                        $update_result = @call_user_func($update['callback']);
+//                        $information['upgrades'][$update['name']] = $update_result && true;
+//                    }
+//                    else
+//                    {
+//                        $information['upgrades'][$update['name']] = false;
+//                    }
+//                }
+//                else
+//                {
+//                    $information['upgrades'][$update['name']] = false;
+//                }
+//            }
+//        }
         $information['sync'] = $this->getSiteStats(array(), false);
         MainWPHelper::write($information);
     }
@@ -1566,11 +1717,29 @@ class MainWPChild
         add_filter('default_option_active_plugins', array(&$this, 'default_option_active_plugins'));
         add_filter('option_active_plugins', array(&$this, 'default_option_active_plugins'));
 
-        //$information['premium_updates'] = apply_filters('mwp_premium_update_notification', array());
+        //First check for new premium updates
+        $update_check = apply_filters('mwp_premium_update_check', array());
+        if (!empty($update_check))
+        {
+            foreach ($update_check as $updateFeedback)
+            {
+                if (is_array($updateFeedback['callback']) && isset($updateFeedback['callback'][0]) && isset($updateFeedback['callback'][1]))
+                {
+                    @call_user_func(array($updateFeedback['callback'][0], $updateFeedback['callback'][1]));
+                }
+                else if (is_string($updateFeedback['callback']))
+                {
+                    @call_user_func($updateFeedback['callback']);
+                }
+            }
+        }
+
+        $information['premium_updates'] = apply_filters('mwp_premium_update_notification', array());
         $premiumPlugins = array();
         $premiumThemes = array();
         if (is_array($information['premium_updates']))
         {
+            $premiumUpdates = array();
             for ($i = 0; $i < count($information['premium_updates']); $i++)
             {
                 if (!isset($information['premium_updates'][$i]['new_version']))
@@ -1594,7 +1763,9 @@ class MainWPChild
                 unset($information['premium_updates'][$i]['new_version']);
 
                 $information['premium_updates'][$i]['update'] = (object)array('new_version' => $new_version, 'premium' => true, 'slug' => $information['premium_updates'][$i]['Name']);
+                if (!in_array($information['premium_updates'][$i]['Name'], $premiumUpdates)) $premiumUpdates[] = $information['premium_updates'][$i]['Name'];
             }
+            update_option('mainwp_premium_updates', $premiumUpdates);
         }
 
         remove_filter('default_option_active_plugins', array(&$this, 'default_option_active_plugins'));
@@ -1611,7 +1782,7 @@ class MainWPChild
             foreach ($plugin_updates as $slug => $plugin_update)
             {
                 if (in_array($plugin_update->Name, $premiumPlugins)) continue;
-//
+
                 $information['plugin_updates'][$slug] = $plugin_update;
             }
         }
@@ -1627,7 +1798,7 @@ class MainWPChild
             foreach ($theme_updates as $slug => $theme_update)
             {
                 if (in_array($theme_update->Name, $premiumThemes)) continue;
-//
+
                 $information['theme_updates'][$slug] = $theme_update;
             }
         }

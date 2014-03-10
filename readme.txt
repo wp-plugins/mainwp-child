@@ -6,7 +6,7 @@ Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.6
 Tested up to: 3.8
-Stable tag: 0.23
+Stable tag: 0.24
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,11 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 10. The Extension Screen
 
 == Changelog ==
+
+= 0.24 =
+* Added support for premium plugins
+* Fixed the restore functionality disappearing without Clone Extension
+* Fixed some deprecated calls
 
 = 0.23 =
 * Fixed some deprecated warnings

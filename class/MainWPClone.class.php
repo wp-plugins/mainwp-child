@@ -16,6 +16,12 @@ class MainWPClone
         add_action('admin_print_scripts-'.$page, array('MainWPClone', 'print_scripts'));
     }
 
+    public static function init_restore_menu()
+    {
+        $page = add_options_page('MainWPClone', __('MainWP Restore','mainwp-child'), 'manage_options', 'MainWPRestore', array('MainWPClone', 'renderNormalRestore'));
+        add_action('admin_print_scripts-'.$page, array('MainWPClone', 'print_scripts'));
+    }
+
     public static function print_scripts()
     {
         global $wp_version;
@@ -151,6 +157,69 @@ class MainWPClone
     <i><?php _e('If you have a FULL backup created by your Network dashboard you may restore it by uploading here.','mainwp-child'); ?><br />
     <?php _e('A database only backup will not work.','mainwp-child'); ?></i><br /><br />
     <form action="<?php echo admin_url('options-general.php?page=MainWPClone&upload=yes'); ?>" method="post" enctype="multipart/form-data"><input type="file" name="file" id="file" /> <input type="submit" name="submit" id="filesubmit" disabled="disabled" value="<?php _e('Clone/Restore Website','mainwp-child'); ?>" /></form>
+        <?php
+        }
+
+        self::renderJavaScript();
+    }
+
+    public static function renderNormalRestore()
+    {
+        $uploadError = false;
+        $uploadFile = false;
+        if (isset($_REQUEST['upload']))
+        {
+            if (isset($_FILES['file']))
+            {
+                if (!function_exists('wp_handle_upload')) require_once(ABSPATH . 'wp-admin/includes/file.php');
+                $uploadedfile = $_FILES['file'];
+                $upload_overrides = array('test_form' => false);
+                $movefile = wp_handle_upload($uploadedfile, $upload_overrides);
+                if ($movefile)
+                {
+                    $uploadFile = str_replace(ABSPATH, '', $movefile['file']);
+                }
+                else
+                {
+                    $uploadError = __('File could not be uploaded.','mainwp-child');
+                }
+            }
+            else
+            {
+                $uploadError = __('File is empty. Please upload something more substantial. This error could also be caused by uploads being disabled in your php.ini or by post_max_size being defined as smaller than upload_max_filesize in php.ini.','mainwp-child');
+            }
+        }
+
+        $uploadSizeInBytes = min(MainWPHelper::return_bytes(ini_get('upload_max_filesize')), MainWPHelper::return_bytes(ini_get('post_max_size')));
+        $uploadSize = MainWPHelper::human_filesize($uploadSizeInBytes);
+        self::renderHeader();
+
+        ?><div id="icon-options-general" class="icon32"><br></div><h2><?php _e('Restore','mainwp-child'); ?></h2><?php
+
+        if (!is_writable(WP_CONTENT_DIR))
+        {
+            echo '<div class="mainwp-child_info-box-red"><strong>' . __('Your content directory is not writable. Please set 0755 permission to ','mainwp-child') . basename(WP_CONTENT_DIR) . '. (' . WP_CONTENT_DIR . ')</strong></div>';
+            $error = true;
+        }
+        ?>
+    <div class="mainwp-child_info-box-green" style="display: none;"><?php _e('Restore process completed successfully! You will now need to click ','mainwp-child'); ?> <a href="<?php echo admin_url('options-permalink.php'); ?>"><?php _e('here','mainwp-child'); ?></a><?php _e(' to re-login to the admin and re-save permalinks.','mainwp-child'); ?></div>
+
+    <?php
+        if ($uploadFile)
+        {
+           _e('Upload successful.','mainwp-child'); ?> <a href="#" id="mainwp-child_uploadclonebutton" class="button-primary" file="<?php echo $uploadFile; ?>"><?php _e('Restore Website','mainwp-child'); ?></a><?php
+        }
+        else
+        {
+            if ($uploadError)
+            {
+                ?><div class="mainwp-child_info-box-red"><?php echo $uploadError; ?></div><?php
+            }
+?>
+    <?php _e('Upload backup in .zip format (Maximum filesize for your server settings: ','mainwp-child'); ?><?php echo $uploadSize; ?>)<br/>
+    <i><?php _e('If you have a FULL backup created by your Network dashboard you may restore it by uploading here.','mainwp-child'); ?><br />
+    <?php _e('A database only backup will not work.','mainwp-child'); ?></i><br /><br />
+    <form action="<?php echo admin_url('options-general.php?page=MainWPRestore&upload=yes'); ?>" method="post" enctype="multipart/form-data"><input type="file" name="file" id="file" /> <input type="submit" name="submit" id="filesubmit" disabled="disabled" value="<?php _e('Restore Website','mainwp-child'); ?>" /></form>
         <?php
         }
 

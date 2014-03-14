@@ -6,7 +6,7 @@ Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.6
 Tested up to: 3.8
-Stable tag: 0.25
+Stable tag: 0.26
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,9 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 10. The Extension Screen
 
 == Changelog ==
+
+= 0.26 =
+* Minor fix for heatmap extension
 
 = 0.25 =
 * Fix for premium plugins

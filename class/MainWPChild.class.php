@@ -1631,15 +1631,15 @@ class MainWPChild
 
         if (isset($_POST['heatMap']))
         {
-            if ($_POST['heatMap'] == '0')
-            {
-                if (get_option('heatMapEnabled') != '0') $update_htaccess = true;
-                update_option('heatMapEnabled', '0');
-            }
-            else
+            if ($_POST['heatMap'] == '1')
             {
                 if (get_option('heatMapEnabled') != '1') $update_htaccess = true;
                 update_option('heatMapEnabled', '1');
+            }
+            else
+            {
+                if (get_option('heatMapEnabled') != '0') $update_htaccess = true;
+                update_option('heatMapEnabled', '0');
             }
         }
 

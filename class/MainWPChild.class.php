@@ -46,7 +46,8 @@ class MainWPChild
         // 'get_next_time_of_page_to_post' => 'get_next_time_of_page_to_post',
         'serverInformation' => 'serverInformation',
         'maintenance_site' => 'maintenance_site',
-        'keyword_links_action' => 'keyword_links_action'
+        'keyword_links_action' => 'keyword_links_action',
+		'branding_child_plugin' => 'branding_child_plugin'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -63,9 +64,10 @@ class MainWPChild
     private $maxHistory = 5;
 
     private $filterFunction = null;
+    private $branding = "MainWP";
 
     public function __construct($plugin_file)
-    {
+    {			
         $this->filterFunction = create_function( '$a', 'if ($a == null) { return false; } return $a;' );
         $this->plugin_dir = dirname($plugin_file);
         $this->plugin_slug = plugin_basename($plugin_file);
@@ -76,9 +78,10 @@ class MainWPChild
         $this->comments_and_clauses = '';
         add_action('init', array(&$this, 'parse_init'));
         add_action('admin_menu', array(&$this, 'admin_menu'));
+		add_action('admin_init', array(&$this, 'admin_init'));
         add_action('init', array(&$this, 'localization'));
         $this->checkOtherAuth();
-
+		
         MainWPClone::init();
 
         //Clean legacy...
@@ -151,21 +154,34 @@ class MainWPChild
 
     function admin_menu()
     {
-        add_options_page('MainWPSettings', __('MainWP Settings','mainwp-child'), 'manage_options', 'MainWPSettings', array(&$this, 'settings'));
+         // hide menu    
+        if (get_option('mainwp_branding_child_hide') == 'T') 
+            return;            
+        
+        $branding_header = get_option('mainwp_branding_plugin_header');        
+                
+        if (is_array($branding_header) && !empty($branding_header['name']))
+             $this->branding = $branding_header['name'];
+        
+        add_options_page('MainWPSettings', __($this->branding . ' Settings','mainwp-child'), 'manage_options', 'MainWPSettings', array(&$this, 'settings'));
 
-        $restorePage = add_submenu_page('tools.php', 'MainWP Restore', '<span style="display: hidden"></span>', 'read', 'mainwp-child-restore', array('MainWPClone', 'renderRestore'));
+        $restorePage = add_submenu_page('tools.php', $this->branding . ' Restore', '<span style="display: hidden"></span>', 'read', 'mainwp-child-restore', array('MainWPClone', 'renderRestore'));
         add_action('admin_print_scripts-'.$restorePage, array('MainWPClone', 'print_scripts'));
 
         $sitesToClone = get_option('mainwp_child_clone_sites');
         if ($sitesToClone != '0')
         {
-            MainWPClone::init_menu();
+            MainWPClone::init_menu($this->branding);
         }
         else
         {
-            MainWPClone::init_restore_menu();
+            MainWPClone::init_restore_menu($this->branding);
         }
     }
+	
+	 function admin_init(){
+		MainWPChildBranding::admin_init();
+	}
 
     function settings()
     {
@@ -181,7 +197,7 @@ class MainWPChild
             }
         }
         ?>
-    <div id="icon-options-general" class="icon32"><br></div><h2><?php _e('MainWP Settings','mainwp-child'); ?></h2>
+    <div id="icon-options-general" class="icon32"><br></div><h2><?php _e($this->branding . ' Settings','mainwp-child'); ?></h2>
     <form method="post" action="">
         <br/>
 
@@ -445,14 +461,29 @@ class MainWPChild
          * Security
          */
         MainWPSecurity::fixAll();
-
+		
         if (isset($_GET['test']))
         {
-//            error_reporting(E_ALL);
-//            ini_set('display_errors', TRUE);
-//            ini_set('display_startup_errors', TRUE);
-//            echo '<pre>';
-//            die('</pre>');
+            error_reporting(E_ALL);
+            ini_set('display_errors', TRUE);
+            ini_set('display_startup_errors', TRUE);
+            echo '<pre>';
+            $excludes = (isset($_POST['exclude']) ? explode(',', $_POST['exclude']) : array());
+            $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/uploads/mainwp';
+            $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/object-cache.php';
+            if (!ini_get('safe_mode')) set_time_limit(600);
+
+            $file_descriptors = 0;
+
+            $newExcludes = array();
+            foreach ($excludes as $exclude)
+            {
+                $newExcludes[] = rtrim($exclude, '/');
+            }
+
+            $res = MainWPBackup::get()->createFullBackup($newExcludes, '', false, false, $file_descriptors);
+            print_r($res);
+            die('</pre>');
         }
 
         //Register does not require auth, so we register here..
@@ -497,7 +528,7 @@ class MainWPChild
                 }
             }
         }
-
+		
         //Redirect to the admin part if needed
         if ($auth && isset($_POST['admin']) && $_POST['admin'] == 1)
         {
@@ -523,6 +554,10 @@ class MainWPChild
         {
             MainWPKeywordLinks::clear_htaccess(); // force clear
         }
+		
+		// Branding extension
+		MainWPChildBranding::Instance()->branding_init();
+		
     }
 
     function default_option_active_plugins($default)
@@ -1840,14 +1875,13 @@ class MainWPChild
         $auths = get_option('mainwp_child_auth');
         $information['extauth'] = ($auths && isset($auths[$this->maxHistory]) ? $auths[$this->maxHistory] : null);
 
-        $plugins = false;
-        $themes = false;
+        $plugins = $this->get_all_plugins_int(false);
+        $themes = $this->get_all_themes_int(false);
+		$information['plugins'] = $plugins;            
+		$information['themes'] = $themes;
+		
         if (isset($_POST['optimize']) && ($_POST['optimize'] == 1))
-        {
-            $plugins = $this->get_all_plugins_int(false);
-            $information['plugins'] = $plugins;
-            $themes = $this->get_all_themes_int(false);
-            $information['themes'] = $themes;
+        {   
             $information['users'] = $this->get_all_users_int();
         }
 
@@ -1889,7 +1923,7 @@ class MainWPChild
             }
             if (count($conflicts) > 0) $information['themeConflicts'] = $conflicts;
         }
-
+		
         $last_post = wp_get_recent_posts(array( 'numberposts' => absint('1')));
         if (isset($last_post[0])) $last_post = $last_post[0];
         if (isset($last_post)) $information['last_post_gmt'] = strtotime($last_post['post_modified_gmt']);
@@ -2521,7 +2555,7 @@ class MainWPChild
                 $out['description'] = $theme['Description'];
                 $out['version'] = $theme['Version'];
                 $out['active'] = ($theme['Name'] == $theme_name) ? 1 : 0;
-                $out['slug'] = $theme['Stylesheet'];
+                $out['slug'] = $theme['Stylesheet'];				
                 if (!$filter)
                 {
                     $rslt[] = $out;
@@ -2636,7 +2670,7 @@ class MainWPChild
                 $out['slug'] = $pluginslug;
                 $out['description'] = $plugin['Description'];
                 $out['version'] = $plugin['Version'];
-                $out['active'] = (is_array($active_plugins) && in_array($pluginslug, $active_plugins)) ? 1 : 0;
+                $out['active'] = (is_array($active_plugins) && in_array($pluginslug, $active_plugins)) ? 1 : 0;				
                 if (!$filter)
                 {
                     $rslt[] = $out;
@@ -2842,6 +2876,7 @@ class MainWPChild
                 delete_option($delete);
             }
         }
+		do_action('mainwp_child_deactivation');
     }
 
     function getWPFilesystem()
@@ -3057,13 +3092,13 @@ class MainWPChild
         global $wpdb;
 
         $sql = 'SHOW TABLE STATUS FROM `' . DB_NAME . '`';
-        $result = @mysql_query($sql, $wpdb->dbh);
-        if (@mysql_num_rows($result) && @is_resource($result))
+        $result = @MainWPChildDB::_query($sql, $wpdb->dbh);
+        if (@MainWPChildDB::num_rows($result) && @MainWPChildDB::is_result($result))
         {
-            while ($row = mysql_fetch_array($result))
+            while ($row = MainWPChildDB::fetch_array($result))
             {
                 $sql = 'OPTIMIZE TABLE ' . $row[0];
-                mysql_query($sql);
+                MainWPChildDB::_query($sql, $wpdb->dbh);
             }
         }
     }
@@ -3071,7 +3106,10 @@ class MainWPChild
     public function keyword_links_action() {
         MainWPKeywordLinks::Instance()->action();
     }
-
+	
+	public function branding_child_plugin() {		
+        MainWPChildBranding::Instance()->action();
+    }
 }
 
 ?>

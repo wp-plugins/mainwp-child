@@ -134,10 +134,10 @@ class MainWPCloneInstall
 
     public function testDatabase()
     {
-        $link = @mysql_connect($this->config['dbHost'], $this->config['dbUser'], $this->config['dbPass']);
+        $link = @MainWPChildDB::connect($this->config['dbHost'], $this->config['dbUser'], $this->config['dbPass']);
         if (!$link) throw new Exception(__('Invalid database host or user/password.','mainwp-child'));
 
-        $db_selected = @mysql_select_db($this->config['dbName'], $link);
+        $db_selected = @MainWPChildDB::select_db($this->config['dbName'], $link);
         if (!$db_selected) throw new Exception(__('Invalid database name','mainwp-child'));
     }
 
@@ -182,11 +182,11 @@ class MainWPCloneInstall
         $var = $wpdb->get_var('SELECT option_value FROM '.$this->config['prefix'].'options WHERE option_name = "'.$name.'"');
         if ($var == NULL)
         {
-            $wpdb->query('INSERT INTO '.$this->config['prefix'].'options (`option_name`, `option_value`) VALUES ("'.$name.'", "'.mysql_real_escape_string(maybe_serialize($value)).'")');
+            $wpdb->query('INSERT INTO '.$this->config['prefix'].'options (`option_name`, `option_value`) VALUES ("'.$name.'", "'.MainWPChildDB::real_escape_string(maybe_serialize($value)).'")');
         }
         else
         {
-            $wpdb->query('UPDATE '.$this->config['prefix'].'options SET option_value = "'.mysql_real_escape_string(maybe_serialize($value)).'" WHERE option_name = "'.$name.'"');
+            $wpdb->query('UPDATE '.$this->config['prefix'].'options SET option_value = "'.MainWPChildDB::real_escape_string(maybe_serialize($value)).'" WHERE option_name = "'.$name.'"');
         }
     }
 
@@ -208,7 +208,7 @@ class MainWPCloneInstall
         $query = '';
         $tableName = '';
         $wpdb->query('SET foreign_key_checks = 0');
-        $handle = @fopen(WP_CONTENT_DIR . '/dbBackup.sql', 'r');
+        $handle = @fopen(WP_CONTENT_DIR . '/dbBackup.sql', 'r');		
         if ($handle)
         {
             $readline = '';
@@ -219,11 +219,11 @@ class MainWPCloneInstall
 
                 $splitLine = explode(";\n", $readline);
                 for ($i = 0; $i < count($splitLine) - 1; $i++)
-                {
-                    $wpdb->query($splitLine[$i]);
+                {	
+                    $wpdb->query($splitLine[$i]);					
                 }
 
-                $readline = $splitLine[count($splitLine) - 1];
+                $readline = $splitLine[count($splitLine) - 1];				
 
 //                if (preg_match('/^(DROP +TABLE +IF +EXISTS|CREATE +TABLE|INSERT +INTO) +(\S+)/is', $readline, $match))
 //                {
@@ -254,7 +254,7 @@ class MainWPCloneInstall
             }
 
             if (trim($readline) != '')
-            {
+            {	
                 $wpdb->query($readline);
             }
 //
@@ -282,11 +282,16 @@ class MainWPCloneInstall
 
             foreach ($tables_db as $curr_table)
             {
-                $tables[] = $curr_table[0];
+				// fix for more table prefix in one database 
+				if (strpos($curr_table[0], $wpdb->prefix) !== false)
+					$tables[] = $curr_table[0];
             }
-
-            $this->icit_srdb_replacer($wpdb->dbh, $this->config['home'], $home, $tables);
-            $this->icit_srdb_replacer($wpdb->dbh, $this->config['siteurl'], $site_url, $tables);
+			// Replace importance data first so if other replace failed, the website still work
+			$wpdb->query('UPDATE '.$table_prefix.'options SET option_value = "'.$site_url.'" WHERE option_name = "siteurl"');
+			$wpdb->query('UPDATE '.$table_prefix.'options SET option_value = "'.$home.'" WHERE option_name = "home"');
+            // Replace others
+			$this->icit_srdb_replacer($wpdb->dbh, $this->config['home'], $home, $tables);
+            $this->icit_srdb_replacer($wpdb->dbh, $this->config['siteurl'], $site_url, $tables);			
         }
 
         // Update site url
@@ -301,12 +306,12 @@ class MainWPCloneInstall
 //
 //            $option_val = $this->recalculateSerializedLengths($option_val);
 //            $option_id = $row['option_id'];
-//            $wpdb->query('UPDATE '.$table_prefix.'options SET option_value = "'.mysql_real_escape_string($option_val).'" WHERE option_id = '.$option_id);
+//            $wpdb->query('UPDATE '.$table_prefix.'options SET option_value = "'.MainWPChildDB::real_escape_string($option_val).'" WHERE option_id = '.$option_id);
 //        }
         $wpdb->query('SET foreign_key_checks = 1');
         return true;
     }
-
+	
     public function install_legacy()
     {
         global $wpdb;
@@ -389,7 +394,7 @@ class MainWPCloneInstall
 
             $option_val = $this->recalculateSerializedLengths($option_val);
             $option_id = $row['option_id'];
-            $wpdb->query('UPDATE '.$table_prefix.'options SET option_value = "'.mysql_real_escape_string($option_val).'" WHERE option_id = '.$option_id);
+            $wpdb->query('UPDATE '.$table_prefix.'options SET option_value = "'.MainWPChildDB::real_escape_string($option_val).'" WHERE option_id = '.$option_id);
         }
         $wpdb->query('SET foreign_key_checks = 1');
         return true;
@@ -535,14 +540,14 @@ class MainWPCloneInstall
     {
         MainWPHelper::getWPFilesystem();
         global $wp_filesystem;
-        $tmpdir = ABSPATH;
+        $tmpdir = ABSPATH;		
         if (($wp_filesystem->method == 'ftpext') && defined('FTP_BASE'))
         {
             $ftpBase = FTP_BASE;
             $ftpBase = trailingslashit($ftpBase);
             $tmpdir = str_replace(ABSPATH, $ftpBase, $tmpdir);
         }
-
+		
         unzip_file($this->file, $tmpdir);
 
         return true;
@@ -636,7 +641,7 @@ class MainWPCloneInstall
      */
     function icit_srdb_replacer( $connection, $search = '', $replace = '', $tables = array( ) ) {
         global $guid, $exclude_cols;
-
+		
         $report = array( 'tables' => 0,
                          'rows' => 0,
                          'change' => 0,
@@ -644,8 +649,7 @@ class MainWPCloneInstall
                          'start' => microtime( ),
                          'end' => microtime( ),
                          'errors' => array( ),
-                         );
-
+                         );				 
         if ( is_array( $tables ) && ! empty( $tables ) ) {
             foreach( $tables as $table ) {
                 $report[ 'tables' ]++;
@@ -653,32 +657,29 @@ class MainWPCloneInstall
                 $columns = array( );
 
                 // Get a list of columns in this table
-                $fields = mysql_query( 'DESCRIBE ' . $table, $connection );
-                while( $column = mysql_fetch_array( $fields ) )
+                $fields = MainWPChildDB::_query( 'DESCRIBE ' . $table, $connection );
+                while( $column = MainWPChildDB::fetch_array( $fields ) )
                     $columns[ $column[ 'Field' ] ] = $column[ 'Key' ] == 'PRI' ? true : false;
-
+				
                 // Count the number of rows we have in the table if large we'll split into blocks, This is a mod from Simon Wheatley
-                $row_count = mysql_query( 'SELECT COUNT(*) FROM ' . $table, $connection );
-                $rows_result = mysql_fetch_array( $row_count );
-                $row_count = $rows_result[ 0 ];
+                $row_count = MainWPChildDB::_query( 'SELECT COUNT(*) as count FROM ' . $table, $connection ); // to fix bug
+                $rows_result = MainWPChildDB::fetch_array( $row_count );				
+                $row_count = $rows_result[ 'count' ];								
                 if ( $row_count == 0 )
                     continue;
 
                 $page_size = 50000;
-                $pages = ceil( $row_count / $page_size );
-
-                for( $page = 0; $page < $pages; $page++ ) {
-
+                $pages = ceil( $row_count / $page_size );				
+                for( $page = 0; $page < $pages; $page++ ) {					
                     $current_row = 0;
                     $start = $page * $page_size;
                     $end = $start + $page_size;
                     // Grab the content of the table
-                    $data = mysql_query( sprintf( 'SELECT * FROM %s LIMIT %d, %d', $table, $start, $end ), $connection );
-
+                    $data = MainWPChildDB::_query( sprintf( 'SELECT * FROM %s LIMIT %d, %d', $table, $start, $end ), $connection );					
                     if ( ! $data )
-                        $report[ 'errors' ][] = mysql_error( );
+                        $report[ 'errors' ][] = MainWPChildDB::error( );
 
-                    while ( $row = mysql_fetch_array( $data ) ) {
+                    while ( $row = MainWPChildDB::fetch_array( $data ) ) {
 
                         $report[ 'rows' ]++; // Increment the row counter
                         $current_row++;
@@ -686,32 +687,30 @@ class MainWPCloneInstall
                         $update_sql = array( );
                         $where_sql = array( );
                         $upd = false;
-
+						
                         foreach( $columns as $column => $primary_key ) {
                             if ( $guid == 1 && in_array( $column, $exclude_cols ) )
                                 continue;
 
-                            $edited_data = $data_to_fix = $row[ $column ];
-
+                            $edited_data = $data_to_fix = $row[ $column ];														
                             // Run a search replace on the data that'll respect the serialisation.
                             $edited_data = $this->recursive_unserialize_replace( $search, $replace, $data_to_fix );
-
                             // Something was changed
-                            if ( $edited_data != $data_to_fix ) {
-                                $report[ 'change' ]++;
-                                $update_sql[] = $column . ' = "' . mysql_real_escape_string( $edited_data ) . '"';
+                            if ( $edited_data != $data_to_fix ) {								
+                                $report[ 'change' ]++;											
+                                $update_sql[] = $column . ' = "' . MainWPChildDB::real_escape_string( $edited_data ) . '"';
                                 $upd = true;
                             }
 
                             if ( $primary_key )
-                                $where_sql[] = $column . ' = "' . mysql_real_escape_string( $data_to_fix ) . '"';
+                                $where_sql[] = $column . ' = "' . MainWPChildDB::real_escape_string( $data_to_fix ) . '"';
                         }
 
                         if ( $upd && ! empty( $where_sql ) ) {
-                            $sql = 'UPDATE ' . $table . ' SET ' . implode( ', ', $update_sql ) . ' WHERE ' . implode( ' AND ', array_filter( $where_sql ) );
-                            $result = mysql_query( $sql, $connection );
+                            $sql = 'UPDATE ' . $table . ' SET ' . implode( ', ', $update_sql ) . ' WHERE ' . implode( ' AND ', array_filter( $where_sql ) );							
+                            $result = MainWPChildDB::_query( $sql, $connection );
                             if ( ! $result )
-                                $report[ 'errors' ][] = mysql_error( );
+                                $report[ 'errors' ][] = MainWPChildDB::error( );
                             else
                                 $report[ 'updates' ]++;
 
@@ -761,7 +760,7 @@ class MainWPCloneInstall
 
     		else {
     			if ( is_string( $data ) )
-    				$data = str_replace( $from, $to, $data );
+    				$data = str_replace( $from, $to, $data );					
     		}
 
     		if ( $serialised )

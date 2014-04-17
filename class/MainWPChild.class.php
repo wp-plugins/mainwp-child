@@ -494,26 +494,11 @@ class MainWPChild
 		
         if (isset($_GET['test']))
         {
-            error_reporting(E_ALL);
-            ini_set('display_errors', TRUE);
-            ini_set('display_startup_errors', TRUE);
-            echo '<pre>';
-            $excludes = (isset($_POST['exclude']) ? explode(',', $_POST['exclude']) : array());
-            $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/uploads/mainwp';
-            $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/object-cache.php';
-            if (!ini_get('safe_mode')) set_time_limit(600);
-
-            $file_descriptors = 0;
-
-            $newExcludes = array();
-            foreach ($excludes as $exclude)
-            {
-                $newExcludes[] = rtrim($exclude, '/');
-            }
-
-            $res = MainWPBackup::get()->createFullBackup($newExcludes, '', false, false, $file_descriptors);
-            print_r($res);
-            die('</pre>');
+            //error_reporting(E_ALL);
+            //ini_set('display_errors', TRUE);
+            //ini_set('display_startup_errors', TRUE);
+            //echo '<pre>';
+            //die('</pre>');
         }
 
         //Register does not require auth, so we register here..

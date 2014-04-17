@@ -3223,7 +3223,7 @@ class MainWPChild
         MainWPChildBranding::Instance()->action();
     }
     
-    public function code_snippet() {  
+    public function code_snippet() {    
         $action = $_POST['action'];
         $information = array('status' => 'FAIL');  
         if ($action === 'run_snippet' || $action === 'save_snippet') {
@@ -3266,6 +3266,8 @@ class MainWPChild
     }
     
     function run_saved_snippets() { 
+        if (!isset($_POST['action']))
+            return;
         $action = $_POST['action'];
         if ($action === "run_snippet" || $action === "save_snippet" || $action === "delete_snippet")
                 return; // do not run saved snippets if in do action snippet     

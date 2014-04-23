@@ -3276,9 +3276,9 @@ class MainWPChild
     {
         $wpConfig = file_get_contents(ABSPATH . 'wp-config.php');        
         if ($action === "delete") {
-            $wpConfig = preg_replace('/\n\n\/\*\*\*snippet_' . $slug. '\*\*\*\/(.*)\/\*\*\*end_' . $slug . '\*\*\*\/\n/is', '', $wpConfig);
+            $wpConfig = preg_replace('/' . PHP_EOL .'{1,2}\/\*\*\*snippet_' . $slug. '\*\*\*\/(.*)\/\*\*\*end_' . $slug . '\*\*\*\/' . PHP_EOL . '/is', '', $wpConfig);
         } else if ($action === "save") {
-            $wpConfig = preg_replace('/(\$table_prefix *= *[\'"]wp_[\'"] *;)/is', '${1}' . PHP_EOL . PHP_EOL . '/***snippet_' . $slug. '***/' . PHP_EOL . $code . PHP_EOL . '/***end_' . $slug . '***/' . PHP_EOL, $wpConfig);
+            $wpConfig = preg_replace('/(\$table_prefix *= *[\'"][^\'|^"]*[\'"] *;)/is', '${1}' . PHP_EOL . PHP_EOL . '/***snippet_' . $slug. '***/' . PHP_EOL . $code . PHP_EOL . '/***end_' . $slug . '***/' . PHP_EOL, $wpConfig);
         }     
         file_put_contents(ABSPATH . 'wp-config.php', $wpConfig);
     }

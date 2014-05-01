@@ -1,7 +1,7 @@
 <?php
 
-ini_set('display_errors', false);
-error_reporting(0);
+@ini_set('display_errors', false);
+@error_reporting(0);
 
 define('MAINWP_CHILD_NR_OF_COMMENTS', 50);
 define('MAINWP_CHILD_NR_OF_PAGES', 50);

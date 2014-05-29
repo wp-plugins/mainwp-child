@@ -53,7 +53,8 @@ class MainWPChild
         'branding_child_plugin' => 'branding_child_plugin',
         'code_snippet' => 'code_snippet',
         'uploader_action' => 'uploader_action',
-        'wordpress_seo' => 'wordpress_seo'
+        'wordpress_seo' => 'wordpress_seo',
+        'client_report' => 'client_report'        
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -656,16 +657,26 @@ class MainWPChild
 
         //Logout if required
         if (isset($current_user->user_login))
+        {
+            if ($current_user->user_login == $username)
+            {
+                wp_set_auth_cookie($current_user->ID);
+
+                return true;
+            }
+
             do_action('wp_logout');
+        }
 
         $user = get_user_by('login', $username);
         if ($user)
         { //If user exists, login
-            wp_set_current_user($user->ID, $user->user_login);
-            wp_set_auth_cookie($user->ID);
+//            wp_set_current_user($user->ID, $user->user_login);
+//            wp_set_auth_cookie($user->ID);
 
             wp_set_current_user($user->ID);
             wp_set_auth_cookie($user->ID);
+
             if ($doAction) do_action('wp_login', $user->user_login);
             return (is_user_logged_in() && $current_user->user_login == $username);
         }
@@ -1154,8 +1165,8 @@ class MainWPChild
         //Read form data
         $new_post = unserialize(base64_decode($_POST['new_post']));
         $post_custom = unserialize(base64_decode($_POST['post_custom']));
-        $post_category = (isset($_POST['post_category']) ? base64_decode($_POST['post_category']) : null);
-        $post_tags = (isset($new_post['post_tags']) ? $new_post['post_tags'] : null);
+        $post_category = rawurldecode(isset($_POST['post_category']) ? base64_decode($_POST['post_category']) : null);
+        $post_tags = rawurldecode(isset($new_post['post_tags']) ? $new_post['post_tags'] : null);
         $post_featured_image = base64_decode($_POST['post_featured_image']);
         $upload_dir = unserialize(base64_decode($_POST['mainwp_upload_dir']));
         $new_post['_ezin_post_category'] = unserialize(base64_decode($_POST['_ezin_post_category']));
@@ -1515,14 +1526,13 @@ class MainWPChild
             @unlink($filepath);
         }
 
+        $result = MainWPBackup::get()->createBackupDB($filepath, true);
 
-        $success = MainWPBackup::get()->createBackupDB($filepath);
-
-        return ($success) ? array(
+        return ($result === false) ? false : array(
             'timestamp' => $timestamp,
-            'file' => $dirs[1] . basename($filepath),
-            'filesize' => filesize($filepath)
-        ) : false;
+            'file' => $dirs[1] . basename($result['filepath']),
+            'filesize' => filesize($result['filepath'])
+        );
     }
 
     function doSecurityFix()
@@ -3454,6 +3464,11 @@ class MainWPChild
     function wordpress_seo() {        
         MainWPWordpressSEO::Instance()->action();                
     }
+    
+    function client_report() {        
+        MainWPClientReport::Instance()->action();                
+    }
+    
 }
 
 ?>

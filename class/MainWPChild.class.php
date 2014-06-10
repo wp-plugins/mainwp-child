@@ -54,7 +54,8 @@ class MainWPChild
         'code_snippet' => 'code_snippet',
         'uploader_action' => 'uploader_action',
         'wordpress_seo' => 'wordpress_seo',
-        'client_report' => 'client_report'        
+        'client_report' => 'client_report',
+        'createBackupPoll' => 'backupPoll'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -94,6 +95,7 @@ class MainWPChild
         $this->checkOtherAuth();
 		
         MainWPClone::init();
+        MainWPChildServerInformation::init();
         $this->run_saved_snippets();        
         //Clean legacy...
         if (get_option('mainwp_child_legacy') === false)
@@ -134,12 +136,15 @@ class MainWPChild
     {
         //Admin Notice...
         if (is_plugin_active('mainwp-child/mainwp-child.php')) {
-            if (!get_option('mainwp_child_pubkey')) {
+            if (!get_option('mainwp_child_pubkey'))
+            {
                 $child_name = ($this->branding_robust === "MainWP") ? "MainWP Child" : $this->branding_robust;
                 echo '<div class="error" style="text-align: center;"><p style="color: red; font-size: 16px; font-weight: bold;">Attention!</p>
                       <p>Please add this site to your ' . $this->branding_robust . ' Dashboard now or deactivate the ' . $child_name . ' plugin until you are ready to do so to avoid security issues.</p></div>';
             }
         }
+
+        MainWPChildServerInformation::showWarnings();
     }
 
     public function localization()
@@ -233,8 +238,11 @@ class MainWPChild
              $this->branding = stripslashes($branding_header['name']);
         
         if (!get_option('mainwp_branding_remove_setting'))
+        {
             add_options_page('MainWPSettings', __($this->branding . ' Settings','mainwp-child'), 'manage_options', 'MainWPSettings', array(&$this, 'settings'));
-        
+            add_options_page('MainWPSettings', __($this->branding . ' Server Information','mainwp-child'), 'manage_options', 'MainWPChildServerInformation', array('MainWPChildServerInformation', 'renderPage'));
+        }
+
         if (!get_option('mainwp_branding_remove_restore')) {
             $restorePage = add_submenu_page('tools.php', $this->branding . ' Restore', '<span style="display: hidden"></span>', 'read', 'mainwp-child-restore', array('MainWPClone', 'renderRestore'));
             add_action('admin_print_scripts-'.$restorePage, array('MainWPClone', 'print_scripts'));
@@ -615,7 +623,8 @@ class MainWPChild
         }
 		
         // Branding extension
-        MainWPChildBranding::Instance()->branding_init();	
+        MainWPChildBranding::Instance()->branding_init();
+        MainWPClientReport::Instance()->creport_init();
     }
 
     function default_option_active_plugins($default)
@@ -1451,8 +1460,39 @@ class MainWPChild
         MainWPHelper::write($information);
     }
 
+    function backupPoll()
+    {
+        $fileNameUID = (isset($_POST['fileNameUID']) ? $_POST['fileNameUID'] : '');
+        $fileName = (isset($_POST['fileName']) ? $_POST['fileName'] : '');
+
+        $backupFile = '';
+        if ($_POST['type'] == 'full')
+        {
+            if ($fileName != '')
+            {
+                $backupFile = $fileName . '.zip';
+            }
+            else
+            {
+                $backupFile = 'backup-' . $fileNameUID . '-*.zip';
+            }
+        }
+        else
+        {
+            $backupFile = 'dbBackup-' . $fileNameUID . '-*.sql';
+        }
+
+        $dirs = MainWPHelper::getMainWPDir('backup');
+        $backupdir = $dirs[0];
+        $result = glob($backupdir . $backupFile . '*');
+        if (count($result) == 0) MainWPHelper::write(array());
+
+        MainWPHelper::write(array('size' => filesize($result[0])));
+    }
+
     function backup()
     {
+        $fileName = (isset($_POST['fileUID']) ? $_POST['fileUID'] : '');
         if ($_POST['type'] == 'full')
         {
             $excludes = (isset($_POST['exclude']) ? explode(',', $_POST['exclude']) : array());
@@ -1468,7 +1508,7 @@ class MainWPChild
                 $newExcludes[] = rtrim($exclude, '/');
             }
 
-            $res = MainWPBackup::get()->createFullBackup($newExcludes, '', false, false, $file_descriptors, (isset($_POST['file']) ? $_POST['file'] : false));
+            $res = MainWPBackup::get()->createFullBackup($newExcludes, $fileName, false, false, $file_descriptors, (isset($_POST['file']) ? $_POST['file'] : false));
             if (!$res)
             {
                 $information['full'] = false;
@@ -1482,7 +1522,7 @@ class MainWPChild
         }
         else if ($_POST['type'] == 'db')
         {
-            $res = $this->backupDB();
+            $res = $this->backupDB($fileName);
             if (!$res)
             {
                 $information['db'] = false;
@@ -1502,18 +1542,19 @@ class MainWPChild
         MainWPHelper::write($information);
     }
 
-    protected function backupDB()
+    protected function backupDB($fileName = '')
     {
         $dirs = MainWPHelper::getMainWPDir('backup');
         $dir = $dirs[0];
         $timestamp = time();
-        $filepath = $dir . 'dbBackup-' . $timestamp . '.sql';
+        if ($fileName != '') $fileName .= '-';
+        $filepath = $dir . 'dbBackup-' . $fileName . $timestamp . '.sql';
 
         if ($dh = opendir($dir))
         {
             while (($file = readdir($dh)) !== false)
             {
-                if ($file != '.' && $file != '..' && preg_match('/dbBackup-(.*).sql$/', $file))
+                if ($file != '.' && $file != '..' && (preg_match('/dbBackup-(.*).sql$/', $file) || preg_match('/dbBackup-(.*).sql.zip$/', $file)))
                 {
                     @unlink($dir . $file);
                 }
@@ -1527,6 +1568,8 @@ class MainWPChild
         }
 
         $result = MainWPBackup::get()->createBackupDB($filepath, true);
+
+        MainWPHelper::update_option('mainwp_child_last_db_backup_size', filesize($result['filepath']));
 
         return ($result === false) ? false : array(
             'timestamp' => $timestamp,
@@ -1939,6 +1982,8 @@ class MainWPChild
         }
         $information['categories'] = $categories;
         $information['totalsize'] = $this->getTotalFileSize();
+        $information['dbsize'] = MainWPChildDB::get_size();
+
         $auths = get_option('mainwp_child_auth');
         $information['extauth'] = ($auths && isset($auths[$this->maxHistory]) ? $auths[$this->maxHistory] : null);
 
@@ -3108,6 +3153,10 @@ class MainWPChild
         @ob_start();
         MainWPChildServerInformation::renderWPConfig();
         $output['wpconfig'] = @ob_get_contents();
+        @ob_end_clean();
+        @ob_start();
+        MainWPChildServerInformation::renderhtaccess();
+        $output['htaccess'] = @ob_get_contents();
         @ob_end_clean();
 
         MainWPHelper::write($output);

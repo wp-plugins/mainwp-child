@@ -7,7 +7,7 @@ Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.6
 Tested up to: 3.9
-Stable tag: 0.29.6
+Stable tag: 0.29.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,6 +57,12 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 10. The Extension Screen
 
 == Changelog ==
+
+= 0.29.7 =
+* Server Information page added for troubleshooting
+* Added server warning messages when minimum requirements not met
+* Added warning messages when child plugin detects possible conflict plugins
+* Added new hooks for upcoming extensions
 
 = 0.29.6 =
 * Fixed plugin conflict with Maintenance plugin

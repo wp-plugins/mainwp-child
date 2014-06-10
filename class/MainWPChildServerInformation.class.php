@@ -2,6 +2,267 @@
 
 class MainWPChildServerInformation
 {
+    public static function init()
+    {
+        add_action('wp_ajax_mainwp-child_dismiss_warnings', array('MainWPChildServerInformation', 'dismissWarnings'));
+    }
+
+    public static function dismissWarnings()
+    {
+        if (isset($_POST['what']))
+        {
+            $dismissWarnings = get_option('mainwp_child_dismiss_warnings');
+            if (!is_array($dismissWarnings)) $dismissWarnings = array();
+
+            if ($_POST['what'] == 'conflict')
+            {
+                $dismissWarnings['conflicts'] = self::getConflicts();
+            }
+            else if ($_POST['what'] == 'warning')
+            {
+                $dismissWarnings['warnings'] = self::getWarnings();
+            }
+
+            MainWPHelper::update_option('mainwp_child_dismiss_warnings', $dismissWarnings);
+        }
+    }
+
+    public static function showWarnings()
+    {
+        if (stristr($_SERVER["REQUEST_URI"], 'MainWPChildServerInformation')) return;
+
+        $conflicts = self::getConflicts();
+        $warnings = self::getWarnings();
+
+        $dismissWarnings = get_option('mainwp_child_dismiss_warnings');
+        if (!is_array($dismissWarnings)) $dismissWarnings = array();
+
+        if (isset($dismissWarnings['warnings']) && $dismissWarnings['warnings'] >= $warnings) $warnings = 0;
+        if (isset($dismissWarnings['conflicts']) && MainWPHelper::containsAll($dismissWarnings['conflicts'], $conflicts)) $conflicts = array();
+
+        if ($warnings == 0 && count($conflicts) == 0) return;
+
+        if ($warnings > 0)
+        {
+            $dismissWarnings['warnings'] = 0;
+        }
+
+        if (count($conflicts) > 0)
+        {
+            $dismissWarnings['conflicts'] = array();
+        }
+        MainWPHelper::update_option('mainwp_child_dismiss_warnings', $dismissWarnings);
+?>
+    <script language="javascript">
+        dismiss_warnings = function(pElement, pAction) {
+            var table = jQuery(pElement.parents('table')[0]);
+            pElement.parents('tr')[0].remove();
+            if (table.find('tr').length == 0)
+            {
+                jQuery('#mainwp-child_server_warnings').hide();
+            }
+
+            var data = {
+                action:'mainwp-child_dismiss_warnings',
+                what: pAction
+            };
+
+            jQuery.ajax({
+                type:"POST",
+                url: ajaxurl,
+                data: data,
+                success: function(resp) { },
+                error: function() { },
+                dataType: 'json'});
+
+            return false;
+        };
+        jQuery(document).on('click', '#mainwp-child-connect-warning-dismiss', function() { return dismiss_warnings(jQuery(this), 'warning'); });
+        jQuery(document).on('click', '#mainwp-child-all-pages-warning-dismiss', function() { return dismiss_warnings(jQuery(this), 'conflict'); });
+    </script>
+    <style type="text/css">
+    .mainwp-child_info-box-red-warning {
+    background-color: rgba(187, 114, 57, 0.2) !important;
+    border-bottom: 4px solid #bb7239 !important;
+    border-top: 1px solid #bb7239 !important;
+    border-left: 1px solid #bb7239 !important;
+    border-right: 1px solid #bb7239 !important;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    margin: 1em 0 !important;
+
+    background-image: url('<?php echo plugins_url('images/mainwp-icon-orange.png', dirname(__FILE__)); ?>') !important;
+    background-position: 1.5em 50% !important;
+    background-repeat: no-repeat !important;
+    background-size: 30px !important;
+    }
+    .mainwp-child_info-box-red-warning table {
+        background-color: rgba(187, 114, 57, 0) !important;
+        border: 0px;
+        padding-left: 4.5em;
+        background-position: 1.5em 50% !important;
+        background-repeat: no-repeat !important;
+        background-size: 30px !important;
+    }
+     </style>
+
+        <div class="updated mainwp-child_info-box-red-warning" id="mainwp-child_server_warnings">
+            <table id="mainwp-table" class="wp-list-table widefat" cellspacing="0">
+                    <tbody id="the-sites-list" class="list:sites">
+            <?php
+            $warning = '';
+
+            if ($warnings > 0)
+            {
+                $warning .= '<tr><td colspan="2">This site may not connect to your dashboard or may have other issues. Check your <a href="options-general.php?page=MainWPChildServerInformation">MainWP Server Information page</a> to review and <a href="http://docs.mainwp.com/child-site-issues/">check here for more information on possible fixes</a></td><td style="text-align: right;"><a href="#" id="mainwp-child-connect-warning-dismiss">Dismiss</a></td></tr>';
+            }
+
+            if (count($conflicts) > 0) {
+                $warning .= '<tr><td colspan="2">';
+                if (count($conflicts) == 1)
+                {
+                    $warning .= '"' . $conflicts[0] . '" is';
+                }
+                else
+                {
+                    $warning .= '"' . join('", "', $conflicts) . '" are';
+                }
+                $warning .= ' installed on this site. This is known to have a potential conflict with MainWP functions. <a href="http://docs.mainwp.com/known-plugin-conflicts/">Please click this link for possible solutions</a></td><td style="text-align: right;"><a href="#" id="mainwp-child-all-pages-warning-dismiss">Dismiss</a></td></tr>';
+            }
+
+            echo $warning;
+            ?>
+                </tbody>
+            </table>
+          </div>
+              <?php
+    }
+
+    public static function renderPage()
+    {
+        ?><h2><?php _e('Plugin Conflicts'); ?></h2><?php
+        MainWPChildServerInformation::renderConflicts();
+        ?><h2><?php _e('Server Information'); ?></h2><?php
+        MainWPChildServerInformation::render();
+        ?><h2><?php _e('Cron Schedules'); ?></h2><?php
+        MainWPChildServerInformation::renderCron();
+        ?><h2><?php _e('Error Log'); ?></h2><?php
+        MainWPChildServerInformation::renderErrorLogPage();
+    }
+
+    public static function getWarnings()
+    {
+        $i = 0;
+
+        if (!self::check('>=', '3.4', 'getWordpressVersion')) $i++;
+        if (!self::check('>=', '5.2.4', 'getPHPVersion')) $i++;
+        if (!self::check('>=', '5.0', 'getMySQLVersion')) $i++;
+        if (!self::check('>=', '30', 'getMaxExecutionTime', '=', '0')) $i++;
+        if (!self::check('>=', '2M', 'getUploadMaxFilesize')) $i++;
+        if (!self::check('>=', '2M', 'getPostMaxSize')) $i++;
+        if (!self::check('>=', '10000', 'getOutputBufferSize')) $i++;
+        if (!self::check('=', true, 'getSSLSupport')) $i++;
+
+        if (!self::checkDirectoryMainWPDirectory(false)) $i++;
+
+        return $i;
+    }
+
+    public static function getConflicts()
+    {
+        global $mainWPChild;
+
+        $pluginConflicts = array('Better WP Security',
+        'iThemes Security',
+        'Secure WordPress',
+        'Wordpress Firewall',
+        'Bad Behavior',
+        'SpyderSpanker'
+        );
+        $conflicts = array();
+        if (count($pluginConflicts) > 0)
+        {
+            $plugins = $mainWPChild->get_all_plugins_int(false);
+            foreach ($plugins as $plugin)
+            {
+                foreach ($pluginConflicts as $pluginConflict)
+                {
+                   if (($plugin['active'] == 1) && (($plugin['name'] == $pluginConflict) || ($plugin['slug'] == $pluginConflict)))
+                   {
+                       $conflicts[] = $plugin['name'];
+                   }
+                }
+            }
+        }
+        return $conflicts;
+    }
+
+    public static function renderConflicts()
+    {
+        $conflicts = self::getConflicts();
+
+        if (count($conflicts) > 0)
+        {
+            $information['pluginConflicts'] = $conflicts;
+            ?>
+            <style type="text/css">
+            .mainwp-child_info-box-warning {
+            background-color: rgba(187, 114, 57, 0.2) !important;
+            border-bottom: 4px solid #bb7239 !important;
+            border-top: 1px solid #bb7239 !important;
+            border-left: 1px solid #bb7239 !important;
+            border-right: 1px solid #bb7239 !important;
+            -webkit-border-radius: 3px;
+            -moz-border-radius: 3px;
+            border-radius: 3px;
+            padding-left: 4.5em;
+            background-image: url('<?php echo plugins_url('images/mainwp-icon-orange.png', dirname(__FILE__)); ?>') !important;
+            background-position: 1.5em 50% !important;
+            background-repeat: no-repeat !important;
+            background-size: 30px !important;
+            }
+             </style>
+        <table id="mainwp-table" class="wp-list-table widefat mainwp-child_info-box-warning" cellspacing="0">
+            <tbody id="the-sites-list" class="list:sites">
+                <tr><td colspan="2"><strong><?php echo count($conflicts); ?> plugin conflict<?php echo (count($conflicts) > 1 ? 's' : ''); ?> found</strong></td><td style="text-align: right;"></td></tr>
+                <?php foreach ($conflicts as $conflict) { ?>
+                <tr><td><strong><?php echo $conflict; ?></strong> is installed on this site. This plugin is known to have a potential conflict with MainWP functions. <a href="http://docs.mainwp.com/known-plugin-conflicts/">Please click this link for possible solutions</a></td></tr>
+                <?php } ?>
+            </tbody>
+        </table>
+            <?php
+        }
+        else
+        {
+            ?>
+            <style type="text/css">
+            .mainwp-child_info-box {
+            background-color: rgba(127, 177, 0, 0.2) !important;
+            border-bottom: 4px solid #7fb100 !important;
+            border-top: 1px solid #7fb100 !important;
+            border-left: 1px solid #7fb100 !important;
+            border-right: 1px solid #7fb100 !important;
+            -webkit-border-radius: 3px;
+            -moz-border-radius: 3px;
+            border-radius: 3px;
+            padding-left: 4.5em;
+            background-image: url('<?php echo plugins_url('images/mainwp-icon.png', dirname(__FILE__)); ?>') !important;
+            background-position: 1.5em 50% !important;
+            background-repeat: no-repeat !important;
+            background-size: 30px !important;
+            }
+             </style>
+        <table id="mainwp-table" class="wp-list-table widefat mainwp-child_info-box" cellspacing="0">
+            <tbody id="the-sites-list" class="list:sites">
+                <tr><td>No conflicts found.</td></td><td style="text-align: right;"><a href="#" id="mainwp-child-info-dismiss">Dismiss</a></td></tr>
+            </tbody>
+        </table>
+            <?php
+        }
+        ?><br /><?php
+    }
+
     public static function render()
     {
         ?>
@@ -131,14 +392,18 @@ class MainWPChildServerInformation
         <?php
     }
 
-    protected static function checkDirectoryMainWPDirectory()
+    protected static function checkDirectoryMainWPDirectory($write = true)
     {
         $dirs = MainWPHelper::getMainWPDir();
         $path = $dirs[0];
 
         if (!is_dir(dirname($path)))
         {
+            if ($write)
+            {
             return self::renderDirectoryRow('MainWP upload directory', $path, 'Writable', 'Directory not found', false);
+        }
+            else return false;
         }
 
         $hasWPFileSystem = MainWPHelper::getWPFilesystem();
@@ -148,18 +413,30 @@ class MainWPChildServerInformation
         {
             if (!$wp_filesystem->is_writable($path))
             {
+                if ($write)
+                {
                 return self::renderDirectoryRow('MainWP upload directory', $path, 'Writable', 'Directory not writable', false);
+                }
+                else return false;
             }
         }
         else
         {
             if (!is_writable($path))
             {
+                if ($write)
+                {
                 return self::renderDirectoryRow('MainWP upload directory', $path, 'Writable', 'Directory not writable', false);
+            }
+                else return false;
             }
         }
 
+        if ($write)
+        {
         return self::renderDirectoryRow('MainWP upload directory', $path, 'Writable', '/', true);
+    }
+        else return true;
     }
 
     protected static function renderDirectoryRow($pName, $pDirectory, $pCheck, $pResult, $pPassed)
@@ -185,9 +462,16 @@ class MainWPChildServerInformation
         <td><?php echo $pConfig; ?></td>
         <td><?php echo $pCompare; ?>  <?php echo ($pVersion === true ? 'true' : $pVersion) . ' ' . $pExtraText; ?></td>
         <td><?php echo ($currentVersion === true ? 'true' : $currentVersion); ?></td>
-        <td><?php echo (version_compare($currentVersion, $pVersion, $pCompare) || (($pExtraCompare != null) && version_compare($currentVersion, $pExtraVersion, $pExtraCompare)) ? '<span class="mainwp-pass">Pass</span>' : '<span class="mainwp-warning">Warning</span>'); ?></td>
+        <td><?php echo (self::check($pCompare, $pVersion, $pGetter, $pExtraCompare, $pExtraVersion) ? '<span class="mainwp-pass">Pass</span>' : '<span class="mainwp-warning">Warning</span>'); ?></td>
     </tr>
     <?php
+    }
+
+    protected static function check($pCompare, $pVersion, $pGetter, $pExtraCompare = null, $pExtraVersion = null)
+    {
+        $currentVersion = call_user_func(array('MainWPChildServerInformation', $pGetter));
+
+        return (version_compare($currentVersion, $pVersion, $pCompare) || (($pExtraCompare != null) && version_compare($currentVersion, $pExtraVersion, $pExtraCompare)));
     }
 
     protected static function getWordpressVersion()
@@ -591,15 +875,33 @@ class MainWPChildServerInformation
    public static function renderWPConfig()
    {
        ?>
+       <style>
+           #mainwp-code-display code {
+               background: none !important;
+           }
+       </style>
        <div class="postbox" id="mainwp-code-display">
            <h3 class="hndle" style="padding: 8px 12px; font-size: 14px;"><span>WP-Config.php</span></h3>
            <div style="padding: 1em;">
            <?php
-               show_source( ABSPATH . 'wp-config.php');
+               @show_source( ABSPATH . 'wp-config.php');
            ?>
            </div>
        </div>
        <?php
    }
+
+   public static function renderhtaccess() {
+        ?>
+        <div class="postbox" id="mainwp-code-display">
+            <h3 class="hndle" style="padding: 8px 12px; font-size: 14px;"><span>.htaccess</span></h3>
+            <div style="padding: 1em;">
+            <?php
+                @show_source( ABSPATH . '.htaccess');
+            ?>
+            </div>
+        </div>
+        <?php
+    }
 }
 

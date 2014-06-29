@@ -56,7 +56,8 @@ class MainWPChild
         'wordpress_seo' => 'wordpress_seo',
         'client_report' => 'client_report',
         'createBackupPoll' => 'backupPoll',
-        'page_speed' => 'page_speed'        
+        'page_speed' => 'page_speed',
+        'woo_com_status' => 'woo_com_status'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -629,7 +630,7 @@ class MainWPChild
         // Branding extension
         MainWPChildBranding::Instance()->branding_init();
         MainWPClientReport::Instance()->creport_init();
-        MainWPChildPagespeed::Instance()->init();
+        MainWPChildPagespeed::Instance()->init();        
     }
 
     function default_option_active_plugins($default)
@@ -3073,6 +3074,8 @@ class MainWPChild
 
     function getTotalFileSize($directory = WP_CONTENT_DIR)
     {
+        try
+        {
         if (MainWPHelper::function_exists('popen'))
         {
             $uploadDir = MainWPHelper::getMainWPDir();
@@ -3149,6 +3152,11 @@ class MainWPChild
         }
 
         return dirsize($directory);
+    }
+        catch (Exception $e)
+        {
+            return 0;
+        }
     }
 
     function serverInformation()
@@ -3536,6 +3544,11 @@ class MainWPChild
     function page_speed() {        
         MainWPChildPagespeed::Instance()->action();                
     }
+      
+    function woo_com_status() {        
+        MainWPChildWooCommerceStatus::Instance()->action();                
+    }
+    
     
 }
 

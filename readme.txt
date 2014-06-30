@@ -59,7 +59,7 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 == Changelog ==
 
 = 0.29.10 =
-* Fixed: Admin not accessible with invalid upload directory
+* Fixed Admin not accessible with invalid upload directory
 * Added new hooks for upcoming extensions
 
 = 0.29.9 =

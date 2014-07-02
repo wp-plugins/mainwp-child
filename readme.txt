@@ -7,7 +7,7 @@ Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.6
 Tested up to: 3.9
-Stable tag: 0.29.10
+Stable tag: 0.29.11
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,8 +58,14 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 
 == Changelog ==
 
+= 0.29.11 =
+* Changes for update to Client Reports Extension
+* Changes for update to Heat Map Extension
+* Changes for update to Maintenance Extension
+* Fixed verbiage for restore popup 
+
 = 0.29.10 =
-* Fixed Admin not accessible with invalid upload directory
+* Fixed: Admin not accessible with invalid upload directory
 * Added new hooks for upcoming extensions
 
 = 0.29.9 =

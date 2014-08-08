@@ -92,7 +92,18 @@ class MainWPHelper
         //Set up a new post (adding addition information)
         $usr = get_user_by('login', $_POST['user']);
         //$new_post['post_author'] = $current_user->ID;
-        $new_post['post_author'] = $usr->ID; // to fix missing post author
+        
+        if (isset($new_post['custom_post_author']) && !empty($new_post['custom_post_author'])) {
+            $_author = get_user_by( 'login', $new_post['custom_post_author'] );
+            if (!empty($_author))
+                $new_post['post_author'] = $_author->ID;
+            else 
+                $new_post['post_author'] = $usr->ID; 
+            unset($new_post['custom_post_author']);
+        } else {
+            $new_post['post_author'] = $usr->ID; // to fix missing post author
+        }
+        
         $ezine_post = !empty($post_custom['_ezine_post_article_source']) ? true : false;
         $terms = $new_post['_ezin_post_category'];
         unset($new_post['_ezin_post_category']);
@@ -238,11 +249,11 @@ class MainWPHelper
                     
                     if (!$seo_ext_activated) {
                         // if Wordpress SEO plugin is not activated do not save yoast post meta
-                        if(strpos($meta_key, "_yoast_wpseo_") !== false) 
+                        if(strpos($meta_key, "_yoast_wpseo_") === false) 
                             add_post_meta($new_post_id, $meta_key, $meta_value);        
-                    } else {
+                    } else {                        
                         add_post_meta($new_post_id, $meta_key, $meta_value);        
-                    }
+                    }                   
                 }
             }
             else if ($meta_key == '_sticky')
@@ -501,7 +512,7 @@ class MainWPHelper
         return !strncmp($haystack, $needle, strlen($needle));
     }
 
-    function endsWith($haystack, $needle)
+    public static function endsWith($haystack, $needle)
     {
         $length = strlen($needle);
         if ($length == 0) {
@@ -842,6 +853,30 @@ class MainWPHelper
         return $count_deleted;
     }
 
+    public static function inExcludes($excludes, $value)
+    {
+        $inExcludes = false;
+        if ($excludes != null)
+        {
+            foreach ($excludes as $exclude)
+            {
+                if (MainWPHelper::endsWith($exclude, '*'))
+                {
+                    if (MainWPHelper::startsWith($value, substr($exclude, 0, strlen($exclude) - 1)))
+                    {
+                        $inExcludes = true;
+                        break;
+                    }
+                }
+                else if ($value == $exclude)
+                {
+                    $inExcludes = true;
+                    break;
+                }
+            }
+        }
+        return $inExcludes;
+    }
 }
 
 ?>

@@ -11,6 +11,7 @@ include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
+    private $version = '1.0.0';
     private $update_version = '1.0';
 
     private $callableFunctions = array(
@@ -400,14 +401,14 @@ class MainWPChild
         if (isset($_POST['cloneFunc']))
         {
             if (!isset($_POST['key'])) return;
-            if (!isset($_POST['file']) || ($_POST['file'] == '')) return;
+            if (!isset($_POST['f']) || ($_POST['f'] == '')) return;
             if (!$this->isValidAuth($_POST['key'])) return;
 
             if ($_POST['cloneFunc'] == 'deleteCloneBackup')
             {
                 $dirs = MainWPHelper::getMainWPDir('backup');
                 $backupdir = $dirs[0];
-                $result = glob($backupdir . $_POST['file']);
+                $result = glob($backupdir . $_POST['f']);
                 if (count($result) == 0) return;
 
                 @unlink($result[0]);
@@ -417,7 +418,7 @@ class MainWPChild
             {
                 $dirs = MainWPHelper::getMainWPDir('backup');
                 $backupdir = $dirs[0];
-                $result = glob($backupdir . 'backup-'.$_POST['file'].'-*.zip');
+                $result = glob($backupdir . 'backup-'.$_POST['f'].'-*.zip');
                 if (count($result) == 0) return;
 
                 MainWPHelper::write(array('size' => filesize($result[0])));
@@ -446,7 +447,7 @@ class MainWPChild
                     $newExcludes[] = rtrim($exclude, '/');
                 }
 
-                $res = MainWPBackup::get()->createFullBackup($newExcludes, $_POST['file'], true, $includeCoreFiles);
+                $res = MainWPBackup::get()->createFullBackup($newExcludes, (isset($_POST['f']) ? $_POST['f'] : $_POST['file']), true, $includeCoreFiles);
                 if (!$res)
                 {
                     $information['backup'] = false;
@@ -517,7 +518,16 @@ class MainWPChild
             {
                 $signature = rawurldecode(isset($_REQUEST['mainwpsignature']) ? $_REQUEST['mainwpsignature'] : '');
 //                $signature = str_replace(' ', '+', $signature);
-                $auth = $this->auth($signature, rawurldecode((isset($_REQUEST['where']) ? $_REQUEST['where'] : (isset($_REQUEST['file']) ? $_REQUEST['file'] : ''))), isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : '', isset($_REQUEST['nossl']) ? $_REQUEST['nossl'] : 0);
+                $file = '';
+                if (isset($_REQUEST['f']))
+                {
+                    $file = $_REQUEST['f'];
+                }
+                else if (isset($_REQUEST['file']))
+                {
+                    $file = $_REQUEST['file'];
+                }
+                $auth = $this->auth($signature, rawurldecode((isset($_REQUEST['where']) ? $_REQUEST['where'] : $file)), isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : '', isset($_REQUEST['nossl']) ? $_REQUEST['nossl'] : 0);
                 if (!$auth) return;
                 if (!$this->login($_REQUEST['user']))
                 {
@@ -526,11 +536,21 @@ class MainWPChild
             }
 
             $where = isset($_REQUEST['where']) ? $_REQUEST['where'] : '';
-            if (isset($_POST['file']))
+            if (isset($_POST['f']) || isset($_POST['file']))
             {
+                $file = '';
+                if (isset($_POST['f']))
+                {
+                    $file = $_POST['f'];
+                }
+                else if (isset($_POST['file']))
+                {
+                    $file = $_POST['file'];
+                }
+
                 $where = 'tools.php?page=mainwp-child-restore';
                 if (session_id() == '') session_start();
-                $_SESSION['file'] = $_POST['file'];
+                $_SESSION['file'] = $file;
                 $_SESSION['size'] = $_POST['size'];
             }
 
@@ -542,7 +562,7 @@ class MainWPChild
 
         remove_action('admin_init', 'send_frame_options_header');
         remove_action('login_init', 'send_frame_options_header');
-        
+
         // Call Heatmap
         if ((get_option('heatMapsIndividualOverrideSetting') != '1' && get_option('heatMapEnabled') !== '0') || 
             (get_option('heatMapsIndividualOverrideSetting') == '1' && get_option('heatMapsIndividualDisable') != '1')
@@ -1233,10 +1253,12 @@ class MainWPChild
         }
         else if ($action == 'trash')
         {
+            add_action('trash_post', array('MainWPChildLinksChecker','hook_post_deleted'));
             wp_trash_post($postId);
         }
         else if ($action == 'delete')
         {
+            add_action('delete_post', array('MainWPChildLinksChecker','hook_post_deleted'));
             wp_delete_post($postId, true);
         }
         else if ($action == 'restore')
@@ -1329,6 +1351,7 @@ class MainWPChild
         }
         else if ($action == 'trash')
         {
+            add_action('trashed_comment', array('MainWPChildLinksChecker', 'hook_trashed_comment'), 10, 1);
             wp_trash_comment($commentId);
         }
         else if ($action == 'restore')
@@ -1506,6 +1529,10 @@ class MainWPChild
 
     function backup()
     {
+        $timeout = 20 * 60 * 60; //20minutes
+        @set_time_limit($timeout);
+        @ini_set('max_execution_time', $timeout);
+
         $fileName = (isset($_POST['fileUID']) ? $_POST['fileUID'] : '');
         if ($_POST['type'] == 'full')
         {
@@ -1515,9 +1542,6 @@ class MainWPChild
             $uploadDir = $uploadDir[0];
             $excludes[] = str_replace(ABSPATH, '', $uploadDir);
             $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/object-cache.php';
-            $timeout = 20 * 60 * 60; //20minutes
-            @set_time_limit($timeout);
-            @ini_set('max_execution_time', $timeout);
 
             $file_descriptors = (isset($_POST['file_descriptors']) ? $_POST['file_descriptors'] : 0);
 
@@ -1527,7 +1551,82 @@ class MainWPChild
                 $newExcludes[] = rtrim($exclude, '/');
             }
 
-            $res = MainWPBackup::get()->createFullBackup($newExcludes, $fileName, false, false, $file_descriptors, (isset($_POST['file']) ? $_POST['file'] : false));
+            $excludebackup = (isset($_POST['excludebackup']) && $_POST['excludebackup'] == 1);
+            $excludecache = (isset($_POST['excludecache']) && $_POST['excludecache'] == 1);
+            $excludezip = (isset($_POST['excludezip']) && $_POST['excludezip'] == 1);
+            $excludenonwp = (isset($_POST['excludenonwp']) && $_POST['excludenonwp'] == 1);
+
+            if ($excludebackup)
+            {
+                //Backup buddy
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/uploads/backupbuddy_backups';
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/uploads/backupbuddy_temp';
+
+                //ManageWP
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/managewp';
+
+                //InfiniteWP
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/infinitewp/backups';
+
+                //WordPress Backup to Dropbox
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/backups';
+
+                //BackUpWordpress
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/backups';
+
+                //BackWPUp
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/uploads/backwpup*';
+
+                //WP Complete Backup
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/plugins/wp-complete-backup/storage';
+
+                //WordPress EZ Backup
+                //This one may be hard to do since they add random text at the end for example, feel free to skip if you need to
+                ///backup_randomkyfkj where kyfkj is random
+
+                //Online Backup for WordPress
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/backups';
+
+                //XCloner
+                $newExcludes[] = '/administrator/backups';
+            }
+
+            if ($excludecache)
+            {
+                //W3 Total Cache
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/w3tc-cache';
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/w3tc';
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/cache/config';
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/cache/minify';
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/cache/page_enhanced';
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/cache/tmp';
+
+                //WP Super Cache
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/cache/supercache';
+
+                //Quick Cache
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/cache/quick-cache';
+
+                //Hyper Cache
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/hyper-cache/cache';
+
+                //WP Fastest Cache
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/cache/all';
+
+                //WP-Rocket
+                $newExcludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/cache/wp-rocket';
+            }
+
+            $file = false;
+            if (isset($_POST['f']))
+            {
+                $file = $_POST['f'];
+            }
+            else if (isset($_POST['file']))
+            {
+                $file = $_POST['file'];
+            }
+            $res = MainWPBackup::get()->createFullBackup($newExcludes, $fileName, false, false, $file_descriptors, $file, $excludezip, $excludenonwp);
             if (!$res)
             {
                 $information['full'] = false;
@@ -1847,6 +1946,7 @@ class MainWPChild
 
         $this->updateExternalSettings();
 
+        $information['version'] = $this->version;
         $information['wpversion'] = $wp_version;
         $information['siteurl'] = get_option('siteurl');
         $information['nossl'] = (get_option('mainwp_child_nossl') == 1 ? 1 : 0);
@@ -2068,21 +2168,30 @@ class MainWPChild
     function scanDir($pDir, $pLvl)
     {
         $output = array();
+//        $output = '';
         if (file_exists($pDir) && is_dir($pDir))
         {
             if ($pLvl == 0) return $output;
+//            if ($pLvl == 0) return '[]';
 
             if ($files = @scandir($pDir))
             {
+//                $first = true;
                 foreach ($files as $file)
                 {
                     if (($file == '.') || ($file == '..')) continue;
                     $newDir = $pDir . $file . DIRECTORY_SEPARATOR;
                     if (@is_dir($newDir))
                     {
-                        $output[$file] = $this->scanDir($newDir, $pLvl - 1);
+                        $output[$file] = $this->scanDir($newDir, $pLvl - 1, false);
+//                        if (!$first) $output .= ',';
+//                        else $output .= '{';
+//                        $output .= '"'.$file.'":' . $this->scanDir($newDir, $pLvl - 1);
+//                        $first = false;
                     }
                 }
+//                if ($first) $output .= '[]';
+//                else $output .= '}';
             }
         }
         return $output;
@@ -2158,7 +2267,7 @@ class MainWPChild
                 $outPost['comment_count'] = $post->comment_count;
                 $outPost['dts'] = strtotime($post->post_modified_gmt);
                 $usr = get_user_by('id', $post->post_author);
-                $outPost['author'] = $usr->user_nicename;
+                $outPost['author'] = !empty($usr) ? $usr->user_nicename : 'removed';
                 $categoryObjects = get_the_category($post->ID);
                 $categories = "";
                 foreach ($categoryObjects as $cat)
@@ -2957,6 +3066,7 @@ class MainWPChild
         }
 
         global $wp_version;
+        $information['version'] = $this->version;
         $information['wpversion'] = $wp_version;
         MainWPHelper::write($information);
     }
@@ -3145,16 +3255,20 @@ class MainWPChild
                 $uploadDir = MainWPHelper::getMainWPDir();
                 $uploadDir = $uploadDir[0];
                 if (stristr($path, $uploadDir)) continue;
-                foreach (glob($path . '/*') AS $next)
+                $res = @glob($path . '/*');
+                if (is_array($res))
                 {
-                    if (is_dir($next))
+                    foreach ($res AS $next)
                     {
-                        $dirs[] = $next;
-                    }
-                    else
-                    {
-                        $fs = filesize($next);
-                        $size += $fs;
+                        if (is_dir($next))
+                        {
+                            $dirs[] = $next;
+                        }
+                        else
+                        {
+                            $fs = filesize($next);
+                            $size += $fs;
+                        }
                     }
                 }
             }

@@ -6,8 +6,8 @@ Author: mainwp
 Author URI: http://mainwp.com
 Plugin URI: http://mainwp.com
 Requires at least: 3.6
-Tested up to: 3.9.1
-Stable tag: 0.29.13
+Tested up to: 3.9.2
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,6 +57,16 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 10. The Extension Screen
 
 == Changelog ==
+
+= 1.0 =
+* Added: Communication to Dashboard during backups to locate common backup locations 
+* Added: Communication to Dashboard during backups to locate common cache locations
+* Added: Communication to Dashboard during backups to locate non-WordPress folders
+* Added: Communication to Dashboard during backups to locate Zip Archives
+* Added: Several new subtasks to increase performance and reduce timeouts on Backups
+* Added: New Hooks for Extensions
+* Fixed: Restore on Child site not timing out
+* Additional CSS and Cosmetic Tweaks
 
 = 0.29.13 =
 * Enhancement: Faster backups by using less file descriptors

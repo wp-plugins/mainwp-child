@@ -28,22 +28,24 @@ class MainWPClone
 
     public static function print_scripts()
     {
-        global $wp_version;
+        wp_enqueue_script('jquery-ui-tooltip');
+        wp_enqueue_script('jquery-ui-autocomplete');
+        wp_enqueue_script('jquery-ui-progressbar');
+        wp_enqueue_script('jquery-ui-dialog');
 
-        if (version_compare('3.6', $wp_version, '>'))
+        global $wp_scripts;
+        $ui = $wp_scripts->query('jquery-ui-core');
+        $version = $ui->ver;
+        if (MainWPHelper::startsWith($version, '1.10'))
         {
-            wp_enqueue_script('jquery-ui', 'https://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js', array('jquery'));
-            wp_enqueue_style('jquery-ui-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/themes/smoothness/jquery-ui.css');
+            wp_enqueue_style('jquery-ui-style', plugins_url('/css/1.10.4/jquery-ui.min.css', dirname(__FILE__)));
         }
         else
         {
-            wp_enqueue_script('jquery-ui-tooltip');
-            wp_enqueue_script('jquery-ui-autocomplete');
-            wp_enqueue_script('jquery-ui-progressbar');
-            wp_enqueue_script('jquery-ui-dialog');
-            wp_enqueue_style('jquery-ui-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/themes/smoothness/jquery-ui.css');
+            wp_enqueue_style('jquery-ui-style', plugins_url('/css/1.11.1/jquery-ui.min.css', dirname(__FILE__)));
         }
     }
+
     public static function renderHeader()
     {
         self::renderStyle();

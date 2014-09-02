@@ -11,7 +11,7 @@ include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
-    private $version = '1.0.0';
+    private $version = '1.1';
     private $update_version = '1.0';
 
     private $callableFunctions = array(
@@ -60,7 +60,8 @@ class MainWPChild
         'page_speed' => 'page_speed',
         'woo_com_status' => 'woo_com_status',
         'heatmaps' => 'heatmaps',
-        'links_checker' => 'links_checker'
+        'links_checker' => 'links_checker',
+        'wordfence' => 'wordfence'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -96,27 +97,18 @@ class MainWPChild
         add_action('init', array(&$this, 'parse_init'));
         add_action('admin_menu', array(&$this, 'admin_menu'));
         add_action('admin_init', array(&$this, 'admin_init'));
-        add_action('init', array(&$this, 'localization'));
+        add_action('init', array(&$this, 'localization'));        
         $this->checkOtherAuth();
 		
         MainWPClone::init();
-        MainWPChildServerInformation::init();
+        MainWPChildServerInformation::init();  
+        MainWPClientReport::init();
         $this->run_saved_snippets();        
-        //Clean legacy...
-        if (get_option('mainwp_child_legacy') === false)
-        {
-            $upload_dir = wp_upload_dir();
-            $dir = $upload_dir['basedir'] . DIRECTORY_SEPARATOR . 'sicknetwork' . DIRECTORY_SEPARATOR;
-
-            MainWPHelper::delete_dir($dir);
-
-            MainWPHelper::update_option('mainwp_child_legacy', true);
-        }
         $branding_header = get_option('mainwp_branding_plugin_header');
         if (is_array($branding_header) && isset($branding_header['name']) && !empty($branding_header['name'])) {
             $this->branding_robust = stripslashes($branding_header["name"]);
         }
-        add_action( 'admin_notices', array(&$this, 'admin_notice'));
+        add_action( 'admin_notices', array(&$this, 'admin_notice'));        
     }
 
     function update()
@@ -366,11 +358,16 @@ class MainWPChild
             if (function_exists('save_mod_rewrite_rules'))
             {
                 $rules = explode("\n", $rules);
+
+                $ch = @fopen($htaccess_file,'w');
+                if (@flock($ch, LOCK_EX))
+                {
                 insert_with_markers($htaccess_file, 'MainWP', $rules);
+                }
+                @fclose($ch);
 
                 if (get_option('mainwp_child_onetime_htaccess') === false)
                 {
-//                    insert_with_markers($htaccess_file, 'SickNetwork', array());
                     MainWPHelper::update_option('mainwp_child_onetime_htaccess', true);
                 }
             }
@@ -385,11 +382,16 @@ class MainWPChild
             if (function_exists('save_mod_rewrite_rules'))
             {
                 $rules = explode("\n", '');
+
+                $ch = @fopen($htaccess_file,'w');
+                if (@flock($ch, LOCK_EX))
+                {
                 insert_with_markers($htaccess_file, 'MainWP', $rules);
+                }
+                @fclose($ch);
 
                 if (get_option('mainwp_child_onetime_htaccess') === false)
                 {
-//                    insert_with_markers($htaccess_file, 'SickNetwork', array());
                     MainWPHelper::update_option('mainwp_child_onetime_htaccess', true);
                 }
             }
@@ -457,7 +459,7 @@ class MainWPChild
                     $information['backup'] = $res['file'];
                     $information['size'] = $res['filesize'];
                 }
-
+                
                 //todo: RS: Remove this when the .18 is out
                 $plugins = array();
                 $dir = WP_CONTENT_DIR . '/plugins/';
@@ -659,6 +661,8 @@ class MainWPChild
         MainWPClientReport::Instance()->creport_init();
         MainWPChildPagespeed::Instance()->init();        
         MainWPChildLinksChecker::Instance()->init();
+        MainWPChildWordfence::Instance()->wordfence_init();        
+        
     }
 
     function default_option_active_plugins($default)
@@ -737,6 +741,7 @@ class MainWPChild
         {
             MainWPHelper::error(__('Bad request.','mainwp-child'));
         }
+        if (file_exists(ABSPATH . '/wp-admin/includes/deprecated.php')) include_once(ABSPATH . '/wp-admin/includes/deprecated.php');
         if (file_exists(ABSPATH . '/wp-admin/includes/screen.php')) include_once(ABSPATH . '/wp-admin/includes/screen.php');
         include_once(ABSPATH . '/wp-admin/includes/template.php');
         include_once(ABSPATH . '/wp-admin/includes/misc.php');
@@ -809,6 +814,7 @@ class MainWPChild
 
         include_once(ABSPATH . '/wp-admin/includes/update.php');
         include_once(ABSPATH . '/wp-admin/includes/class-wp-upgrader.php');
+        if (file_exists(ABSPATH . '/wp-admin/includes/deprecated.php')) include_once(ABSPATH . '/wp-admin/includes/deprecated.php');
         if (file_exists(ABSPATH . '/wp-admin/includes/screen.php')) include_once(ABSPATH . '/wp-admin/includes/screen.php');
         if (file_exists(ABSPATH . '/wp-admin/includes/template.php')) include_once(ABSPATH . '/wp-admin/includes/template.php');
         include_once(ABSPATH . '/wp-admin/includes/file.php');
@@ -904,6 +910,7 @@ class MainWPChild
         $wp_filesystem = $this->getWPFilesystem();
 
         include_once(ABSPATH . '/wp-admin/includes/class-wp-upgrader.php');
+        if (file_exists(ABSPATH . '/wp-admin/includes/deprecated.php')) include_once(ABSPATH . '/wp-admin/includes/deprecated.php');
         if (file_exists(ABSPATH . '/wp-admin/includes/screen.php')) include_once(ABSPATH . '/wp-admin/includes/screen.php');
         if (file_exists(ABSPATH . '/wp-admin/includes/template.php')) include_once(ABSPATH . '/wp-admin/includes/template.php');
         if (file_exists(ABSPATH . '/wp-admin/includes/misc.php')) include_once(ABSPATH . '/wp-admin/includes/misc.php');
@@ -975,12 +982,11 @@ class MainWPChild
                         if (strcmp($slug, $premiumPlugin) == 0)
                         {
                             $mwp_premium_updates_todo[$key] = $update;
-                            $mwp_premium_updates_todo_slugs[] = $slug;
+                            $mwp_premium_updates_todo_slugs[] = $premiumPlugin;
                         }
                     }
                 }
                 unset($mwp_premium_updates);
-
                 $premiumUpgrader = new Plugin_Upgrader(new Bulk_Plugin_Upgrader_Skin(compact('nonce', 'url')));
             }
 
@@ -1527,7 +1533,7 @@ class MainWPChild
         MainWPHelper::write(array('size' => filesize($result[0])));
     }
 
-    function backup()
+    function backup($pWrite = true)
     {
         $timeout = 20 * 60 * 60; //20minutes
         @set_time_limit($timeout);
@@ -1544,6 +1550,7 @@ class MainWPChild
             $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/object-cache.php';
 
             $file_descriptors = (isset($_POST['file_descriptors']) ? $_POST['file_descriptors'] : 0);
+            $loadFilesBeforeZip = (isset($_POST['loadFilesBeforeZip']) ? $_POST['loadFilesBeforeZip'] : true);
 
             $newExcludes = array();
             foreach ($excludes as $exclude)
@@ -1626,7 +1633,7 @@ class MainWPChild
             {
                 $file = $_POST['file'];
             }
-            $res = MainWPBackup::get()->createFullBackup($newExcludes, $fileName, false, false, $file_descriptors, $file, $excludezip, $excludenonwp);
+            $res = MainWPBackup::get()->createFullBackup($newExcludes, $fileName, false, false, $file_descriptors, $file, $excludezip, $excludenonwp, $loadFilesBeforeZip);
             if (!$res)
             {
                 $information['full'] = false;
@@ -1657,7 +1664,10 @@ class MainWPChild
             $information['full'] = false;
             $information['db'] = false;
         }
-        MainWPHelper::write($information);
+
+        if ($pWrite) MainWPHelper::write($information);
+
+        return $information;
     }
 
     protected function backupDB($fileName = '')
@@ -2064,7 +2074,8 @@ class MainWPChild
 
             foreach ($theme_updates as $slug => $theme_update)
             {
-                if (in_array($theme_update->Name, $premiumThemes)) continue;
+                $name = (is_array($theme_update) ? $theme_update['Name'] : $theme_update->Name);
+                if (in_array($name, $premiumThemes)) continue;
 
                 $information['theme_updates'][$slug] = $theme_update;
             }
@@ -2168,15 +2179,13 @@ class MainWPChild
     function scanDir($pDir, $pLvl)
     {
         $output = array();
-//        $output = '';
         if (file_exists($pDir) && is_dir($pDir))
         {
-            if ($pLvl == 0) return $output;
-//            if ($pLvl == 0) return '[]';
+            if (basename($pDir) == 'logs') return empty($output) ? null : $output;
+            if ($pLvl == 0) return empty($output) ? null : $output;
 
             if ($files = @scandir($pDir))
             {
-//                $first = true;
                 foreach ($files as $file)
                 {
                     if (($file == '.') || ($file == '..')) continue;
@@ -2184,17 +2193,14 @@ class MainWPChild
                     if (@is_dir($newDir))
                     {
                         $output[$file] = $this->scanDir($newDir, $pLvl - 1, false);
-//                        if (!$first) $output .= ',';
-//                        else $output .= '{';
-//                        $output .= '"'.$file.'":' . $this->scanDir($newDir, $pLvl - 1);
-//                        $first = false;
                     }
                 }
-//                if ($first) $output .= '[]';
-//                else $output .= '}';
+
+                unset($files);
+                $files = null;
             }
         }
-        return $output;
+        return empty($output) ? null : $output;
     }
 
     function upgrade_get_theme_updates()
@@ -2760,6 +2766,7 @@ class MainWPChild
         else if ($action == 'delete')
         {
             include_once(ABSPATH . '/wp-admin/includes/theme.php');
+            if (file_exists(ABSPATH . '/wp-admin/includes/deprecated.php')) include_once(ABSPATH . '/wp-admin/includes/deprecated.php');
             if (file_exists(ABSPATH . '/wp-admin/includes/screen.php')) include_once(ABSPATH . '/wp-admin/includes/screen.php');
             include_once(ABSPATH . '/wp-admin/includes/file.php');
             include_once(ABSPATH . '/wp-admin/includes/template.php');
@@ -2810,20 +2817,22 @@ class MainWPChild
     function get_all_themes_int($filter, $keyword = '', $status = '')
     {
         $rslt = array();
-        $themes = get_themes(); //todo: deprecated, use wp_get_themes
+        $themes = wp_get_themes();
+
         if (is_array($themes))
         {
             $theme_name = wp_get_theme()->get('Name');
 
+            /** @var $theme WP_Theme */
             foreach ($themes as $theme)
             {
                 $out = array();
-                $out['name'] = $theme['Name'];
-                $out['title'] = $theme['Title'];
-                $out['description'] = $theme['Description'];
-                $out['version'] = $theme['Version'];
-                $out['active'] = ($theme['Name'] == $theme_name) ? 1 : 0;
-                $out['slug'] = $theme['Stylesheet'];				
+                $out['name'] = $theme->get('Name');
+                $out['title'] = $theme->display('Name', true, false);
+                $out['description'] = $theme->display('Description', true, false);
+                $out['version'] = $theme->display('Version', true, false);
+                $out['active'] = ($theme->get('Name') == $theme_name) ? 1 : 0;
+                $out['slug'] = $theme->get_stylesheet();
                 if (!$filter)
                 {
                     $rslt[] = $out;
@@ -2873,6 +2882,7 @@ class MainWPChild
         else if ($action == 'delete')
         {
             include_once(ABSPATH . '/wp-admin/includes/plugin.php');
+            if (file_exists(ABSPATH . '/wp-admin/includes/deprecated.php')) include_once(ABSPATH . '/wp-admin/includes/deprecated.php');
             if (file_exists(ABSPATH . '/wp-admin/includes/screen.php')) include_once(ABSPATH . '/wp-admin/includes/screen.php');
             include_once(ABSPATH . '/wp-admin/includes/file.php');
             include_once(ABSPATH . '/wp-admin/includes/template.php');
@@ -2924,7 +2934,7 @@ class MainWPChild
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         $rslt = array();
-        $plugins = get_plugins(); //todo: deprecated, use wp_get_plugins
+        $plugins = get_plugins();
         if (is_array($plugins))
         {
             $active_plugins = get_option('active_plugins');
@@ -3087,41 +3097,6 @@ class MainWPChild
 
     function activation()
     {
-        if (get_option('_sicknetwork_pubkey') !== false && get_option('mainwp_child_activated_once') === false)
-        {
-            $options = array('sicknetwork_auth' => 'mainwp_child_auth',
-                'sicknetwork_clone_sites' => 'mainwp_child_clone_sites',
-                '_sicknetwork_uniqueId' => 'mainwp_child_uniqueId',
-                '_sicknetwork_pluginDir' => 'mainwp_child_pluginDir',
-                '_sicknetwork_htaccess_set' => 'mainwp_child_htaccess_set',
-                '_sicknetwork_fix_htaccess' => 'mainwp_child_fix_htaccess',
-                '_sicknetwork_pubkey' => 'mainwp_child_pubkey',
-                '_sicknetwork_server' => 'mainwp_child_server',
-                '_sicknetwork_nonce' => 'mainwp_child_nonce',
-                '_sicknetwork_nossl' => 'mainwp_child_nossl',
-                '_sicknetwork_nossl_key' => 'mainwp_child_nossl_key',
-                '_sicknetwork_remove_wp_version' => 'mainwp_child_remove_wp_version',
-                '_sicknetwork_remove_rsd' => 'mainwp_child_remove_rsd',
-                '_sicknetwork_remove_wlw' => 'mainwp_child_remove_wlw',
-                '_sicknetwork_remove_core_updates' => 'mainwp_child_remove_core_updates',
-                '_sicknetwork_remove_plugin_updates' => 'mainwp_child_remove_plugin_updates',
-                '_sicknetwork_remove_theme_updates' => 'mainwp_child_remove_theme_updates',
-                '_sicknetwork_remove_php_reporting' => 'mainwp_child_remove_php_reporting',
-                '_sicknetwork_remove_scripts_version' => 'mainwp_child_remove_scripts_version',
-                '_sicknetwork_remove_styles_version' => 'mainwp_child_remove_styles_version',
-                '_sicknetwork_clone_permalink' => 'mainwp_child_clone_permalink',
-                '_sicknetwork_click_data' => 'mainwp_child_click_data');
-
-            foreach ($options as $old => $new)
-            {
-                if (get_option($old) !== false)
-                {
-                    MainWPHelper::update_option($new, get_option($old));
-                }
-            }
-        }
-        else
-        {
             $to_delete = array('mainwp_child_pubkey', 'mainwp_child_nonce', 'mainwp_child_nossl', 'mainwp_child_nossl_key', 'mainwp_child_uniqueId');
             foreach ($to_delete as $delete)
             {
@@ -3130,7 +3105,6 @@ class MainWPChild
                     delete_option($delete);
                 }
             }
-        }
 
         MainWPHelper::update_option('mainwp_child_activated_once', true);
         
@@ -3165,6 +3139,7 @@ class MainWPChild
         if (empty($wp_filesystem))
         {
             ob_start();
+            if (file_exists(ABSPATH . '/wp-admin/includes/deprecated.php')) include_once(ABSPATH . '/wp-admin/includes/deprecated.php');
             if (file_exists(ABSPATH . '/wp-admin/includes/screen.php')) include_once(ABSPATH . '/wp-admin/includes/screen.php');
             if (file_exists(ABSPATH . '/wp-admin/includes/template.php')) include_once(ABSPATH . '/wp-admin/includes/template.php');
             $creds = request_filesystem_credentials('test', '', false, false, $extra_fields = null);
@@ -3694,6 +3669,10 @@ class MainWPChild
     }
     function links_checker() {        
         MainWPChildLinksChecker::Instance()->action();                
+    }
+    
+    function wordfence() {        
+        MainWPChildWordfence::Instance()->action();                
     }
 }
 

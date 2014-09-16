@@ -11,7 +11,7 @@ include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
-    private $version = '1.2';
+    private $version = '1.3';
     private $update_version = '1.0';
 
     private $callableFunctions = array(
@@ -241,7 +241,7 @@ class MainWPChild
         }
 
         if (!get_option('mainwp_branding_remove_restore')) {
-            $restorePage = add_submenu_page('tools.php', $this->branding . ' Restore', '<span style="display: hidden"></span>', 'read', 'mainwp-child-restore', array('MainWPClone', 'renderRestore'));
+            $restorePage = add_submenu_page('tools.php', $this->branding . ' Restore', $this->branding . ' Restore', 'read', 'mainwp-child-restore', array('MainWPClone', 'renderRestore'));
             add_action('admin_print_scripts-'.$restorePage, array('MainWPClone', 'print_scripts'));
 
             $sitesToClone = get_option('mainwp_child_clone_sites');
@@ -362,7 +362,7 @@ class MainWPChild
 //                $ch = @fopen($htaccess_file,'w');
 //                if (@flock($ch, LOCK_EX))
 //                {
-                    insert_with_markers($htaccess_file, 'MainWP', $rules);
+                insert_with_markers($htaccess_file, 'MainWP', $rules);
 //                }
 //                @flock($ch, LOCK_UN);
 //                @fclose($ch);
@@ -387,7 +387,7 @@ class MainWPChild
 //                $ch = @fopen($htaccess_file,'w');
 //                if (@flock($ch, LOCK_EX))
 //                {
-                    insert_with_markers($htaccess_file, 'MainWP', $rules);
+                insert_with_markers($htaccess_file, 'MainWP', $rules);
 //                }
 //                @flock($ch, LOCK_UN);
 //                @fclose($ch);
@@ -557,8 +557,15 @@ class MainWPChild
                 $_SESSION['file'] = $file;
                 $_SESSION['size'] = $_POST['size'];
             }
-
-            add_filter('the_content', array(MainWPKeywordLinks::Instance(), 'filter_content'), 100, 2);
+            
+            $open_location = isset($_REQUEST['open_location']) ? $_REQUEST['open_location'] : '';  
+            if (!empty($open_location)) {
+                $open_location = base64_decode($open_location);                  
+                wp_redirect(site_url() . $open_location);
+                exit();
+            }
+            
+            add_filter('the_content', array(MainWPKeywordLinks::Instance(), 'filter_content'), 100, 2);            
             wp_redirect(admin_url($where));
             exit();
         }
@@ -732,6 +739,13 @@ class MainWPChild
         return false;
     }
 
+    function noSSLFilterFunction($r, $url)
+    {
+        $r['sslverify'] = false;
+
+        return $r;
+    }
+
     /**
      * Functions to support core functionality
      */
@@ -767,6 +781,11 @@ class MainWPChild
         {
             $installer = new WP_Upgrader();
             //@see wp-admin/includes/class-wp-upgrader.php
+            if (isset($_POST['sslVerify']) && $_POST['sslVerify'] == 0)
+            {
+                add_filter( 'http_request_args', array(&$this, 'noSSLFilterFunction'), 99, 2);
+            }
+
             $result = $installer->run(array(
                 'package' => $url,
                 'destination' => ($_POST['type'] == 'plugin' ? WP_PLUGIN_DIR
@@ -775,6 +794,11 @@ class MainWPChild
                 'clear_working' => true,
                 'hook_extra' => array()
             ));
+
+            if (isset($_POST['sslVerify']) && $_POST['sslVerify'] == 0)
+            {
+                remove_filter( 'http_request_args', array(&$this, 'noSSLFilterFunction') , 99);
+            }
             if (is_wp_error($result))
             {
                 $error = $result->get_error_codes();
@@ -1552,6 +1576,16 @@ class MainWPChild
             $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/object-cache.php';
 
             $file_descriptors = (isset($_POST['file_descriptors']) ? $_POST['file_descriptors'] : 0);
+            $file_descriptors_auto = (isset($_POST['file_descriptors_auto']) ? $_POST['file_descriptors_auto'] : 0);
+            if ($file_descriptors_auto == 1)
+            {
+                if (function_exists('posix_getrlimit'))
+                {
+                    $result = @posix_getrlimit();
+                    if (isset($result['soft openfiles'])) $file_descriptors = $result['soft openfiles'];
+                }
+            }
+
             $loadFilesBeforeZip = (isset($_POST['loadFilesBeforeZip']) ? $_POST['loadFilesBeforeZip'] : true);
 
             $newExcludes = array();
@@ -1956,7 +1990,7 @@ class MainWPChild
     {
         global $wp_version;
 
-        $this->updateExternalSettings();
+        if ($exit) $this->updateExternalSettings();
 
         $information['version'] = $this->version;
         $information['wpversion'] = $wp_version;

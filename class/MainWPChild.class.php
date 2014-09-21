@@ -241,8 +241,8 @@ class MainWPChild
         }
 
         if (!get_option('mainwp_branding_remove_restore')) {
-            //$restorePage = add_submenu_page('tools.php', $this->branding . ' Restore', $this->branding . ' Restore', 'read', 'mainwp-child-restore', array('MainWPClone', 'renderRestore'));
-            //add_action('admin_print_scripts-'.$restorePage, array('MainWPClone', 'print_scripts'));
+            $restorePage = add_submenu_page('import.php', $this->branding . ' Restore', $this->branding . ' Restore', 'read', 'mainwp-child-restore', array('MainWPClone', 'renderRestore'));
+            add_action('admin_print_scripts-'.$restorePage, array('MainWPClone', 'print_scripts'));
 
             $sitesToClone = get_option('mainwp_child_clone_sites');
             if ($sitesToClone != '0')
@@ -552,7 +552,7 @@ class MainWPChild
                     $file = $_POST['file'];
                 }
 
-                $where = 'tools.php?page=mainwp-child-restore';
+                $where = 'admin.php?page=mainwp-child-restore';
                 if (session_id() == '') session_start();
                 $_SESSION['file'] = $file;
                 $_SESSION['size'] = $_POST['size'];

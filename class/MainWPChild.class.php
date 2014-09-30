@@ -560,7 +560,9 @@ class MainWPChild
             
             $open_location = isset($_REQUEST['open_location']) ? $_REQUEST['open_location'] : '';  
             if (!empty($open_location)) {
-                $open_location = base64_decode($open_location);                  
+                $open_location = base64_decode($open_location);    
+                if (strpos($open_location, "nonce=child_temp_nonce") !== false)
+                    $open_location = str_replace ("nonce=child_temp_nonce", "nonce=" . wp_create_nonce('wp-ajax'), $open_location);
                 wp_redirect(site_url() . $open_location);
                 exit();
             }

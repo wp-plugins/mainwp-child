@@ -59,7 +59,7 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 == Changelog ==
 
 = 1.3.4 =
-* Fixed big in Client Report Extension
+* Fixed bug in Client Report Extension
 
 = 1.3.3 =
 * Added new hooks for Wordfence Extension

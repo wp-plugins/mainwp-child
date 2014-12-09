@@ -115,7 +115,7 @@ class MainWPChildServerInformation
 
             if ($warnings > 0)
             {
-                $warning .= '<tr><td colspan="2">This site may not connect to your dashboard or may have other issues. Check your <a href="options-general.php?page=MainWPChildServerInformation">MainWP Server Information page</a> to review and <a href="http://docs.mainwp.com/child-site-issues/">check here for more information on possible fixes</a></td><td style="text-align: right;"><a href="#" id="mainwp-child-connect-warning-dismiss">Dismiss</a></td></tr>';
+                $warning .= '<tr><td colspan="2">This site may not connect to your dashboard or may have other issues. Check your <a href="admin.php?page=MainWPChildServerInformation">MainWP Server Information page</a> to review and <a href="http://docs.mainwp.com/child-site-issues/">check here for more information on possible fixes</a></td><td style="text-align: right;"><a href="#" id="mainwp-child-connect-warning-dismiss">Dismiss</a></td></tr>';
             }
 
             if (count($conflicts) > 0) {
@@ -141,7 +141,9 @@ class MainWPChildServerInformation
 
     public static function renderPage()
     {
-        ?><h2><?php _e('Plugin Conflicts'); ?></h2><?php
+        ?><div class="wrap">
+        <h2><?php _e('Plugin Conflicts'); ?></h2>
+        <br/><?php
         MainWPChildServerInformation::renderConflicts();
         ?><h2><?php _e('Server Information'); ?></h2><?php
         MainWPChildServerInformation::render();
@@ -149,6 +151,9 @@ class MainWPChildServerInformation
         MainWPChildServerInformation::renderCron();
         ?><h2><?php _e('Error Log'); ?></h2><?php
         MainWPChildServerInformation::renderErrorLogPage();
+        ?>
+        </div>
+        <?php
     }
 
     public static function getWarnings()
@@ -270,7 +275,7 @@ class MainWPChildServerInformation
         <table id="mainwp-table" class="wp-list-table widefat" cellspacing="0">
             <thead>
             <tr>
-                <th scope="col" class="manage-column sorted" style=""><span><?php _e('Server Configuration','mainwp'); ?></span></th>
+                <th scope="col" class="manage-column column-posts" style=""><span><?php _e('Server Configuration','mainwp'); ?></span></th>
                 <th scope="col" class="manage-column column-posts" style=""><?php _e('Suggested Value','mainwp'); ?></th>
                 <th scope="col" class="manage-column column-posts" style=""><?php _e('Value','mainwp'); ?></th>
                 <th scope="col" class="manage-column column-posts" style=""><?php _e('Status','mainwp'); ?></th>
@@ -295,8 +300,24 @@ class MainWPChildServerInformation
         <table id="mainwp-table" class="wp-list-table widefat" cellspacing="0">
             <thead>
             <tr>
-                <th scope="col" class="manage-column sorted" style=""><span><?php _e('Directory name','mainwp'); ?></span></th>
-                <th scope="col" class="manage-column sorted" style=""><span><?php _e('Path','mainwp'); ?></span></th>
+                <th scope="col" class="manage-column column-posts" style="" colspan="4"><span><?php _e('Backup Archive Information','mainwp'); ?></span></th>
+            </tr>
+            </thead>
+
+            <tbody id="the-sites-list" class="list:sites">
+                <?php
+                self::renderRow('ZipArchive enabled in PHP', '=', true, 'getZipArchiveEnabled');
+                self::renderRow('Tar GZip supported', '=', true, 'getGZipEnabled');
+                self::renderRow('Tar BZip2 supported', '=', true, 'getBZipEnabled');
+                ?>
+            </tbody>
+        </table>
+        <br />
+        <table id="mainwp-table" class="wp-list-table widefat" cellspacing="0">
+            <thead>
+            <tr>
+                <th scope="col" class="manage-column column-posts" style=""><span><?php _e('Directory name','mainwp'); ?></span></th>
+                <th scope="col" class="manage-column column-posts" style=""><span><?php _e('Path','mainwp'); ?></span></th>
                 <th scope="col" class="manage-column column-posts" style=""><?php _e('Check','mainwp'); ?></th>
                 <th scope="col" class="manage-column column-posts" style=""><?php _e('Result','mainwp'); ?></th>
                 <th scope="col" class="manage-column column-posts" style=""><?php _e('Status','mainwp'); ?></th>
@@ -313,7 +334,7 @@ class MainWPChildServerInformation
         <table id="mainwp-table" class="wp-list-table widefat" cellspacing="0">
         <thead>
             <tr>
-                <th scope="col" class="manage-column sorted" style=""><span><?php _e('Server Info','mainwp'); ?></span></th>
+                <th scope="col" class="manage-column column-posts" style=""><span><?php _e('Server Info','mainwp'); ?></span></th>
                 <th scope="col" class="manage-column column-posts" style=""><span><?php _e('Value','mainwp'); ?></span></th>
             </tr>
         </thead>
@@ -367,7 +388,7 @@ class MainWPChildServerInformation
     <table id="mainwp-table" class="wp-list-table widefat" cellspacing="0">
         <thead>
             <tr>
-                <th scope="col" class="manage-column sorted" style=""><span><?php _e('Next due','mainwp'); ?></span></th>
+                <th scope="col" class="manage-column column-posts" style=""><span><?php _e('Next due','mainwp'); ?></span></th>
                 <th scope="col" class="manage-column column-posts" style=""><span><?php _e('Schedule','mainwp'); ?></span></th>
                 <th scope="col" class="manage-column column-posts" style=""><span><?php _e('Hook','mainwp'); ?></span></th>
             </tr>
@@ -479,6 +500,21 @@ class MainWPChildServerInformation
         $currentVersion = call_user_func(array('MainWPChildServerInformation', $pGetter));
 
         return (version_compare($currentVersion, $pVersion, $pCompare) || (($pExtraCompare != null) && version_compare($currentVersion, $pExtraVersion, $pExtraCompare)));
+    }
+
+    protected static function getZipArchiveEnabled()
+    {
+        return class_exists('ZipArchive');
+    }
+
+    protected static function getGZipEnabled()
+    {
+        return function_exists('gzopen');
+    }
+
+    protected static function getBZipEnabled()
+    {
+        return function_exists('bzopen');
     }
 
     protected static function getWordpressVersion()

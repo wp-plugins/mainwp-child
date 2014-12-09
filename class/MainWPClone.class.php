@@ -14,7 +14,8 @@ class MainWPClone
     {     
         if (empty($the_branding))
             $the_branding = "MainWP";
-        $page = add_options_page('MainWPClone', __($the_branding . ' Clone','mainwp-child'), 'manage_options', 'MainWPClone', array('MainWPClone', 'render'));
+        //$page = add_options_page('MainWPClone', __($the_branding . ' Clone','mainwp-child'), 'manage_options', 'MainWPClone', array('MainWPClone', 'render'));
+        $page = add_submenu_page('mainwp_child_tab', 'MainWPClone', __($the_branding . ' Clone','mainwp-child'), 'manage_options', 'MainWPClone', array('MainWPClone', 'render'));
         add_action('admin_print_scripts-'.$page, array('MainWPClone', 'print_scripts'));
     }
 
@@ -22,7 +23,8 @@ class MainWPClone
     {
         if (empty($the_branding))
             $the_branding = "MainWP";
-        $page = add_options_page('MainWPClone', __($the_branding . ' Restore','mainwp-child'), 'manage_options', 'MainWPRestore', array('MainWPClone', 'renderNormalRestore'));
+        //$page = add_options_page('MainWPClone', __($the_branding . ' Restore','mainwp-child'), 'manage_options', 'MainWPRestore', array('MainWPClone', 'renderNormalRestore'));
+        $page = add_submenu_page('mainwp_child_tab', 'MainWPClone', __($the_branding . ' Restore','mainwp-child'), 'manage_options', 'MainWPRestore', array('MainWPClone', 'renderNormalRestore'));
         add_action('admin_print_scripts-'.$page, array('MainWPClone', 'print_scripts'));
     }
 
@@ -161,10 +163,10 @@ class MainWPClone
 ?>
     <div id="icon-options-general" class="icon32"><br></div><h2><strong><?php _e('Option 1:', 'mainwp-child'); ?></strong> <?php _e('Restore/Clone From Backup','mainwp-child'); ?></h2>
         <br />
-    <?php _e('Upload backup in .zip format (Maximum filesize for your server settings: ','mainwp-child'); ?><?php echo $uploadSize; ?>)<br/>
+    <div class="mainwp-child_info-box-green"><?php _e('Upload backup in .zip format (Maximum filesize for your server settings: ','mainwp-child'); ?><?php echo $uploadSize; ?>)</div>
     <i><?php _e('If you have a FULL backup created by your Network dashboard you may restore it by uploading here.','mainwp-child'); ?><br />
     <?php _e('A database only backup will not work.','mainwp-child'); ?></i><br /><br />
-    <form action="<?php echo admin_url('options-general.php?page=MainWPClone&upload=yes'); ?>" method="post" enctype="multipart/form-data"><input type="file" name="file" id="file" /> <input type="submit" name="submit" id="filesubmit" disabled="disabled" value="<?php _e('Clone/Restore Website','mainwp-child'); ?>" /></form>
+    <form action="<?php echo admin_url('admin.php?page=MainWPClone&upload=yes'); ?>" method="post" enctype="multipart/form-data"><input type="file" name="file" id="file" /> <input type="submit" name="submit" id="filesubmit" disabled="disabled" value="<?php _e('Clone/Restore Website','mainwp-child'); ?>" /></form>
         <?php
         }
 		
@@ -231,7 +233,7 @@ class MainWPClone
     <?php _e('Upload backup in .zip format (Maximum filesize for your server settings: ','mainwp-child'); ?><?php echo $uploadSize; ?>)<br/>
     <i><?php _e('If you have a FULL backup created by your Network dashboard you may restore it by uploading here.','mainwp-child'); ?><br />
     <?php _e('A database only backup will not work.','mainwp-child'); ?></i><br /><br />
-    <form action="<?php echo admin_url('options-general.php?page=MainWPRestore&upload=yes'); ?>" method="post" enctype="multipart/form-data"><input type="file" name="file" id="file" /> <input type="submit" name="submit" id="filesubmit" disabled="disabled" value="<?php _e('Restore Website','mainwp-child'); ?>" /></form>
+    <form action="<?php echo admin_url('admin.php?page=MainWPRestore&upload=yes'); ?>" method="post" enctype="multipart/form-data"><input type="file" name="file" id="file" /> <input type="submit" name="submit" id="filesubmit" disabled="disabled" value="<?php _e('Restore Website','mainwp-child'); ?>" /></form>
         <?php
         }
 		
@@ -252,7 +254,7 @@ Author URI: http://dd32.id.au/
     public static function renderCloneFromServer() {
 
         $page = $_REQUEST['page'];
-        $url = admin_url('options-general.php?page=' . $page . "#title_03"); 
+        $url = admin_url('admin.php?page=MainWPClone' . "#title_03");
 
         $dirs = MainWPHelper::getMainWPDir('backup', false);
         $current_dir = $backup_dir = $dirs[0];		
@@ -274,7 +276,7 @@ Author URI: http://dd32.id.au/
 
         echo "<br /><hr /><br />";
         echo '<h2 id="title_03"><strong>' . __('Option 2:', 'mainwp-child') . '</strong> ' . __('Restore/Clone From Server','mainwp-child') . '</h2>';
-		echo __('If you have uploaded a FULL backup to your server (via FTP or other means) you can use this section to locate the zip file and select it.  A database only backup will not work.','mainwp-child'); 
+        echo '<div class="mainwp-child_info-box-green">' . __('If you have uploaded a FULL backup to your server (via FTP or other means) you can use this section to locate the zip file and select it.  A database only backup will not work.','mainwp-child') . '</div>';
 
         if (!is_readable($current_dir)) {
                 echo '<div class="mainwp-child_info-box-yellow"><strong>' . __('Root directory is not readable. Please contact with site administrator to correct.','mainwp-child') . '</strong></div>';
@@ -549,7 +551,7 @@ Author URI: http://dd32.id.au/
             } }(siteId, rand), 'json');
         };
 
-        cloneInitiateBackupDownload = function(pSiteId, pUrl, pSize)
+        cloneInitiateBackupDownload = function(pSiteId, pFile, pSize)
         {
             updateClonePopup(translations['downloading_backup']);
 
@@ -558,8 +560,9 @@ Author URI: http://dd32.id.au/
 
             var data = {
                 action:'mainwp-child_clone_backupdownload',
-                url: pUrl
+                file: pFile
             };
+
             if (pSiteId != undefined) data['siteId'] = pSiteId;
 
             jQuery.post(ajaxurl, data, function(siteId) { return function(resp) {
@@ -581,17 +584,17 @@ Author URI: http://dd32.id.au/
             }}(pSiteId), 'json');
 
             //Poll for filesize 'till it's complete
-            pollingDownloading = setTimeout(function() { cloneBackupDownloadPolling(pSiteId, pUrl); }, 1000);
+            pollingDownloading = setTimeout(function() { cloneBackupDownloadPolling(pSiteId, pFile); }, 1000);
         };
 
-        cloneBackupDownloadPolling = function(siteId, url)
+        cloneBackupDownloadPolling = function(siteId, pFile)
         {
             if (backupDownloadFinished) return;
 
             var data = {
                 action:'mainwp-child_clone_backupdownloadpoll',
                 siteId: siteId,
-                url: url
+                file: pFile
             };
 
             jQuery.post(ajaxurl, data, function(pSiteId) { return function(resp) {
@@ -778,32 +781,29 @@ Author URI: http://dd32.id.au/
         .mainwp-child_info-box-yellow {
             margin: 5px 0 15px;
             padding: .6em;
-            background: #ffffe0;
-            border: 1px solid #e6db55;
-            border-radius: 3px ;
-            -moz-border-radius: 3px ;
-            -webkit-border-radius: 3px ;
+            background: #fff;
+            border-left: 4px solid #ffec00;
             clear: both ;
+            color:#333;
+            box-shadow: 0 1px 1px rgba(0,0,0,.04);
         }
         .mainwp-child_info-box-red {
             margin: 5px 0 15px;
             padding: .6em;
-            background: #ffebe8;
-            border: 1px solid #c00;
-            border-radius: 3px ;
-            -moz-border-radius: 3px ;
-            -webkit-border-radius: 3px ;
+            background: #fff;
+            border-left: 4px solid #bb4539;
             clear: both ;
+            color:#333;
+            box-shadow: 0 1px 1px rgba(0,0,0,.04);
         }
         .mainwp-child_info-box-green {
             margin: 5px 0 15px;
             padding: .6em;
-            background: rgba(127, 177, 0, 0.3);
-            border: 1px solid #7fb100;
-            border-radius: 3px ;
-            -moz-border-radius: 3px ;
-            -webkit-border-radius: 3px ;
+            background: #fff;
+            border-left: 4px solid #7fb100;
             clear: both ;
+            color:#333;
+            box-shadow: 0 1px 1px rgba(0,0,0,.04);
         }
         .mainwp-child_select_sites_box {
             width: 505px;
@@ -908,7 +908,7 @@ Author URI: http://dd32.id.au/
         .ui-dialog .ui-dialog-titlebar { background: none; border: none;}
         .ui-dialog .ui-dialog-title { font-size: 20px; font-family: Helvetica; text-transform: uppercase; color: #555; }
         .ui-dialog h3 {font-family: Helvetica; text-transform: uppercase; color: #888; border-radius: 25px; -moz-border-radius: 25px; -webkit-border-radius: 25px;}
-        .ui-dialog .ui-dialog-titlebar-close { background: none; border-radius: 15px; -moz-border-radius: 15px; -webkit-border-radius: 15px; color: #fff;}
+        .ui-dialog .ui-dialog-titlebar-close { background: none; border-radius: 15px; -moz- border-radius: 15px; -webkit- border-radius: 15px; color: #fff;}
         .ui-dialog .ui-dialog-titlebar-close:hover { background: #7fb100;}
         /*
         .ui-dialog .ui-progressbar {border:5px Solid #ddd; border-radius: 25px; -moz-border-radius: 25px; -webkit-border-radius: 25px; }
@@ -1033,7 +1033,8 @@ Author URI: http://dd32.id.au/
             MainWPHelper::endSession();
             //Send request to the childsite!
             global $wp_version;
-            $result = MainWPHelper::fetchUrl($url, array('cloneFunc' => 'createCloneBackup', 'key' => $key, 'f' => $rand, 'wpversion' => $wp_version));
+            $method = (function_exists('gzopen') ? 'tar.gz' : 'zip');
+            $result = MainWPHelper::fetchUrl($url, array('cloneFunc' => 'createCloneBackup', 'key' => $key, 'f' => $rand, 'wpversion' => $wp_version, 'zipmethod' => $method));
 
             if (!$result['backup']) throw new Exception(__('Could not create backupfile on child','mainwp-child'));
             @session_start();
@@ -1087,12 +1088,32 @@ Author URI: http://dd32.id.au/
     {
         try
         {
-            if (!isset($_POST['url'])) throw new Exception(__('No download link given','mainwp-child'));
-            $url = $_POST['url'];
+            if (!isset($_POST['file'])) throw new Exception(__('No download link given','mainwp-child'));
+//            if (!isset($_POST['siteId'])) throw new Exception(__('No site given','mainwp-child'));
 
+            $file = $_POST['file'];
+            if (isset($_POST['siteId']))
+            {
+                $siteId = $_POST['siteId'];
+
+                $sitesToClone = get_option('mainwp_child_clone_sites');
+                if (!is_array($sitesToClone) || !isset($sitesToClone[$siteId])) throw new Exception(__('Site not found', 'mainwp-child'));
+
+                $siteToClone = $sitesToClone[$siteId];
+                $url = $siteToClone['url'];
+                $key = $siteToClone['extauth'];
+
+                $url = trailingslashit($url) . '?cloneFunc=dl&key=' . urlencode($key) . '&f=' . $file;
+            }
+            else
+            {
+                $url = $file;
+            }
             MainWPHelper::endSession();
             //Send request to the childsite!
-            $filename = 'download-'.basename($url);
+            $split = explode('=', $file);
+            $file = urldecode($split[count($split) - 1]);
+            $filename = 'download-'.basename($file);
             $dirs = MainWPHelper::getMainWPDir('backup', false);
             $backupdir = $dirs[0];
 
@@ -1100,7 +1121,7 @@ Author URI: http://dd32.id.au/
             {
                 while (($file = readdir($dh)) !== false)
                 {
-                    if ($file != '.' && $file != '..' && preg_match('/^download-(.*).zip/', $file))
+                    if ($file != '.' && $file != '..' && MainWPHelper::isArchive($file, 'download-'))
                     {
                         @unlink($backupdir . $file);
                     }
@@ -1135,7 +1156,7 @@ Author URI: http://dd32.id.au/
                     {
                         $siteToClone = $sitesToClone[$siteId];
 
-                        MainWPHelper::fetchUrl($siteToClone['url'], array('cloneFunc' => 'deleteCloneBackup', 'key' => $siteToClone['extauth'], 'f' => basename($url)));
+                        MainWPHelper::fetchUrl($siteToClone['url'], array('cloneFunc' => 'deleteCloneBackup', 'key' => $siteToClone['extauth'], 'f' => $_POST['file']));
                     }
                 }
             }
@@ -1160,10 +1181,19 @@ Author URI: http://dd32.id.au/
             $dirs = MainWPHelper::getMainWPDir('backup', false);
             $backupdir = $dirs[0];
 
-            $files = glob($backupdir . 'download-*.zip');
+            $files = glob($backupdir . 'download-*');
+            $archiveFile = false;
+            foreach ($files as $file)
+            {
+                if (MainWPHelper::isArchive($file, 'download-'))
+                {
+                    $archiveFile = $file;
+                    break;
+                }
+            }
+            if ($archiveFile === false) throw new Exception(__('No download file found','mainwp-child'));
 
-            if (count($files) == 0) throw new Exception(__('No download file found','mainwp-child'));
-            $output = array('size' => filesize($files[0]) / 1024);
+            $output = array('size' => filesize($archiveFile) / 1024);
         }
         catch (Exception $e)
         {
@@ -1186,10 +1216,18 @@ Author URI: http://dd32.id.au/
                 $dirs = MainWPHelper::getMainWPDir('backup', false);
                 $backupdir = $dirs[0];
 
-                $files = glob($backupdir . 'download-*.zip');
-
-                if (count($files) == 0) throw new Exception(__('No download file found','mainwp-child'));
-                $file = $files[0];
+                $files = glob($backupdir . 'download-*');
+                $archiveFile = false;
+                foreach ($files as $file)
+                {
+                    if (MainWPHelper::isArchive($file, 'download-'))
+                    {
+                        $archiveFile = $file;
+                        break;
+                    }
+                }
+                if ($archiveFile === false) throw new Exception(__('No download file found','mainwp-child'));
+                $file = $archiveFile;
             } else if(file_exists($file)) {
                 $testFull = true;
             } else {
@@ -1197,7 +1235,6 @@ Author URI: http://dd32.id.au/
                 if (!file_exists($file)) throw new Exception(__('Backup file not found','mainwp-child'));
                 $testFull = true;
             }
-
             //return size in kb
             $cloneInstall = new MainWPCloneInstall($file);
 

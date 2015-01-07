@@ -11,7 +11,7 @@ include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
-    private $version = '2.0.4';
+    private $version = '2.0.5';
     private $update_version = '1.0';
 
     private $callableFunctions = array(
@@ -681,16 +681,19 @@ class MainWPChild
 		
         if (isset($_GET['mainwptest']))
         {
-            error_reporting(E_ALL);
+            /*error_reporting(E_ALL);
             ini_set('display_errors', TRUE);
             ini_set('display_startup_errors', TRUE);
             echo '<pre>';
             $start = microtime(true);
 
-            print_r(base64_encode(gzdeflate("test1234")));
+            $_POST['type'] = 'full';
+            $_POST['ext'] = 'tar.gz';
+            $_POST['pid'] = time();
+            print_r($this->backup(false));
 
             $stop = microtime(true);
-            die(($stop - $start) . 's</pre>');
+            die(($stop - $start) . 's</pre>');*/
         }
 
         //Register does not require auth, so we register here..

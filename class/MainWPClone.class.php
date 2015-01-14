@@ -10,21 +10,21 @@ class MainWPClone
         if (get_option('mainwp_child_clone_permalink') || get_option('mainwp_child_restore_permalink')) add_action('admin_notices', array('MainWPClone', 'permalinkAdminNotice'));
     }
 
-    public static function init_menu($the_branding)
+    public static function init_menu($the_branding, $childMenuSlug = "")
     {     
         if (empty($the_branding))
-            $the_branding = "MainWP";
+            $the_branding = "MainWP";        
         //$page = add_options_page('MainWPClone', __($the_branding . ' Clone','mainwp-child'), 'manage_options', 'MainWPClone', array('MainWPClone', 'render'));
-        $page = add_submenu_page('mainwp_child_tab', 'MainWPClone', __($the_branding . ' Clone','mainwp-child'), 'manage_options', 'MainWPClone', array('MainWPClone', 'render'));
+        $page = add_submenu_page($childMenuSlug, 'MainWPClone', __($the_branding . ' Clone','mainwp-child'), 'manage_options', 'MainWPClone', array('MainWPClone', 'render'));
         add_action('admin_print_scripts-'.$page, array('MainWPClone', 'print_scripts'));
     }
 
-    public static function init_restore_menu($the_branding)
+    public static function init_restore_menu($the_branding, $childMenuSlug = "")
     {
         if (empty($the_branding))
-            $the_branding = "MainWP";
+            $the_branding = "MainWP";       
         //$page = add_options_page('MainWPClone', __($the_branding . ' Restore','mainwp-child'), 'manage_options', 'MainWPRestore', array('MainWPClone', 'renderNormalRestore'));
-        $page = add_submenu_page('mainwp_child_tab', 'MainWPClone', __($the_branding . ' Restore','mainwp-child'), 'manage_options', 'MainWPRestore', array('MainWPClone', 'renderNormalRestore'));
+        $page = add_submenu_page($childMenuSlug, 'MainWPClone', __($the_branding . ' Restore','mainwp-child'), 'manage_options', 'MainWPRestore', array('MainWPClone', 'renderNormalRestore'));
         add_action('admin_print_scripts-'.$page, array('MainWPClone', 'print_scripts'));
     }
 
@@ -63,6 +63,13 @@ class MainWPClone
         <?php
     }
 
+    public static function upload_mimes($mime_types = array())
+    {
+        if (!isset($mime_types['tar.bz2'])) $mime_types['tar.bz2'] = 'application/x-tar';
+
+        return $mime_types;
+    }
+
     public static function render()
     {
         $uploadError = false;
@@ -74,6 +81,7 @@ class MainWPClone
                 if (!function_exists('wp_handle_upload')) require_once(ABSPATH . 'wp-admin/includes/file.php');
                 $uploadedfile = $_FILES['file'];
                 $upload_overrides = array('test_form' => false);
+                add_filter('upload_mimes', array('MainWPClone', 'upload_mimes'));
                 $movefile = wp_handle_upload($uploadedfile, $upload_overrides);
                 if ($movefile)
                 {

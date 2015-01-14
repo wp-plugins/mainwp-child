@@ -933,7 +933,7 @@ class TarArchiver
         if ($this->type == 'tar.gz')
         {
             //$this->archive = @fopen('compress.zlib://' . $filepath, 'ab');
-            $this->archive = @gzopen($filepath, 'w');
+            $this->archive = @gzopen($filepath, 'wb');
         }
         else if ($this->type == 'tar.bz2')
         {
@@ -964,7 +964,7 @@ class TarArchiver
         if ($this->type == 'tar.gz')
         {
             //$this->archive = @fopen('compress.zlib://' . $filepath, 'ab');
-			$this->archive = @gzopen($filepath, 'a');
+			$this->archive = @gzopen($filepath, 'ab');
         }
         else if ($this->type == 'tar.bz2')
         {
@@ -1306,7 +1306,7 @@ class TarArchiver
                     else mkdir(dirname($to . $file['name']), 0777, true);
                 }
 
-                if (!empty($wp_filesystem))
+                if (!empty($wp_filesystem) && ($file['stat'][7] < 2000000))
                 {
                     $contents = '';
                     $bytesToRead = $file['stat'][7];

@@ -11,7 +11,7 @@ include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
-    private $version = '2.0.6';
+    private $version = '2.0.7';
     private $update_version = '1.0';
 
     private $callableFunctions = array(
@@ -1710,13 +1710,12 @@ class MainWPChild
         {
             $backupFile = 'dbBackup-' . $fileNameUID . '-*.sql';
 
+            $dirs = MainWPHelper::getMainWPDir('backup');
+            $backupdir = $dirs[0];
+            $result = glob($backupdir . $backupFile . '*');
+            if (count($result) == 0) MainWPHelper::write(array());
 
-        $dirs = MainWPHelper::getMainWPDir('backup');
-        $backupdir = $dirs[0];
-        $result = glob($backupdir . $backupFile . '*');
-        if (count($result) == 0) MainWPHelper::write(array());
-
-        MainWPHelper::write(array('size' => filesize($result[0])));
+            MainWPHelper::write(array('size' => filesize($result[0])));
             exit();
         }
     }
@@ -1816,6 +1815,20 @@ class MainWPChild
             $uploadDir = $uploadDir[0];
             $excludes[] = str_replace(ABSPATH, '', $uploadDir);
             $excludes[] = str_replace(ABSPATH, '', WP_CONTENT_DIR) . '/object-cache.php';
+
+            $uname = @posix_uname();
+            if (is_array($uname) && isset($uname['nodename']))
+            {
+                if (stristr($uname['nodename'], 'hostgator'))
+                {
+                    if (!isset($_POST['file_descriptors']) || $_POST['file_descriptors'] == 0 || $_POST['file_descriptors'] > 1000)
+                    {
+                        $_POST['file_descriptors'] = 1000;
+                    }
+                    $_POST['file_descriptors_auto'] = 0;
+                    $_POST['loadFilesBeforeZip'] = false;
+                }
+            }
 
             $file_descriptors = (isset($_POST['file_descriptors']) ? $_POST['file_descriptors'] : 0);
             $file_descriptors_auto = (isset($_POST['file_descriptors_auto']) ? $_POST['file_descriptors_auto'] : 0);
@@ -2571,8 +2584,8 @@ class MainWPChild
                 $outPost = array();
                 $outPost['id'] = $post->ID;
                 $outPost['status'] = $post->post_status;
-                $outPost['title'] = $post->post_title;
-                $outPost['content'] = $post->post_content;
+                $outPost['title'] = utf8_encode($post->post_title);
+                $outPost['content'] = utf8_encode($post->post_content);
                 $outPost['comment_count'] = $post->comment_count;
                 $outPost['dts'] = strtotime($post->post_modified_gmt);
                 $usr = get_user_by('id', $post->post_author);
@@ -3139,7 +3152,7 @@ class MainWPChild
                 $out['slug'] = $theme->get_stylesheet();
                 if (!$filter)
                 {
-                    $rslt[] = $out;
+                    if ($keyword == '' || stristr($out['title'], $keyword)) $rslt[] = $out;
                 }
                 else if ($out['active'] == (($status == 'active') ? 1 : 0))
                 {
@@ -3256,7 +3269,7 @@ class MainWPChild
                 $out['active'] = (is_array($active_plugins) && in_array($pluginslug, $active_plugins)) ? 1 : 0;				                
                 if (!$filter)
                 {
-                    $rslt[] = $out;
+                    if ($keyword == '' || stristr($out['name'], $keyword)) $rslt[] = $out;
                 }
                 else if ($out['active'] == (($status == 'active') ? 1 : 0))
                 {

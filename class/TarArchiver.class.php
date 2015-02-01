@@ -254,6 +254,8 @@ class TarArchiver
 
     public function addDir($path, $excludes)
     {
+        if ((basename($path) == '.') || (basename($path) == '..')) return;
+
         $this->addEmptyDir($path, str_replace(ABSPATH, '', $path));
 
         if (file_exists(rtrim($path, '/') . '/.htaccess')) $this->addFile(rtrim($path, '/') . '/.htaccess', rtrim(str_replace(ABSPATH, '', $path), '/') . '/mainwp-htaccess');
@@ -270,7 +272,7 @@ class TarArchiver
         foreach ($iterator as $path)
         {
             $name = $path->__toString();
-            if (MainWPHelper::endsWith($name, '/.') || MainWPHelper::endsWith($name, '/..')) continue;
+            if ((basename($name) == '.') || (basename($name) == '..')) continue;
 
             if (!MainWPHelper::inExcludes($excludes, str_replace(ABSPATH, '', $name)))
             {
@@ -469,6 +471,8 @@ class TarArchiver
     protected $cnt = 0;
     private function addFile($path, $entryName)
     {
+        if ((basename($path) == '.') || (basename($path) == '..')) return false;
+
         if ($this->excludeZip && MainWPHelper::endsWith($path, '.zip'))
         {
             $this->log('Skipping ' . $path);

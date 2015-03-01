@@ -11,7 +11,7 @@ include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
-    private $version = '2.0.8';
+    private $version = '2.0.9';
     private $update_version = '1.0';
 
     private $callableFunctions = array(
@@ -64,7 +64,8 @@ class MainWPChild
         'links_checker' => 'links_checker',
         'wordfence' => 'wordfence',
         'delete_backup' => 'delete_backup',
-        'update_values' => 'update_values'               
+        'update_values' => 'update_values',
+        'ithemes' => 'ithemes'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -773,6 +774,7 @@ class MainWPChild
             die();
         }
 
+        new MainWPChildIThemesSecurity();
         //Call the function required
         if (isset($_POST['function']) && isset($this->callableFunctions[$_POST['function']]))
         {
@@ -798,7 +800,7 @@ class MainWPChild
         MainWPChildPagespeed::Instance()->init();        
         MainWPChildLinksChecker::Instance()->init();
         MainWPChildWordfence::Instance()->wordfence_init();        
-         
+        MainWPChildIThemesSecurity::Instance()->ithemes_init();
     }
 
     function default_option_active_plugins($default)
@@ -2480,7 +2482,7 @@ class MainWPChild
         {
             $themeConflicts = json_decode(stripslashes($_POST['themeConflicts']), true);
             $conflicts = array();
-            if (count($themeConflicts) > 0)
+            if (is_array($themeConflicts) && count($themeConflicts) > 0)
             {
                 $theme = wp_get_theme()->get('Name');
                 foreach ($themeConflicts as $themeConflict)
@@ -4012,6 +4014,10 @@ class MainWPChild
     
     function wordfence() {        
         MainWPChildWordfence::Instance()->action();                
+    }
+
+    function ithemes() {
+        MainWPChildIThemesSecurity::Instance()->action();
     }
 
     function delete_backup()

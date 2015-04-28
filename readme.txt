@@ -6,8 +6,8 @@ Author: mainwp
 Author URI: https://mainwp.com
 Plugin URI: https://mainwp.com
 Requires at least: 3.6
-Tested up to: 4.2
-Stable tag: 2.0.13
+Tested up to: 4.2.1
+Stable tag: 2.0.14
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,7 +15,7 @@ Allows you to manage multiple blogs from one dashboard by providing a secure con
 
 == Description ==
 
-This is the Child plugin for the [MainWP Dashboard](http://wordpress.org/plugins/mainwp/)
+This is the Child plugin for the [MainWP Dashboard](https://wordpress.org/plugins/mainwp/)
 
 The MainWP Child plugin is used so the installed blog can be securely managed remotely by your WordPress Network.
 
@@ -57,6 +57,9 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 10. The Extension Screen
 
 == Changelog ==
+
+= 2.0.14 =
+* Fixed: Handling of updates when plugins change folder structure or name
 
 = 2.0.13 =
 * Fixed: Security Issue with add_query_arg and remove_query_arg

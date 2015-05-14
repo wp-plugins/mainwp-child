@@ -11,8 +11,8 @@ include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
-    private $version = '2.0.14';
-    private $update_version = '1.0';
+    private $version = '2.0.15';
+    private $update_version = '1.2';
 
     private $callableFunctions = array(
         'stats' => 'getSiteStats',
@@ -66,7 +66,8 @@ class MainWPChild
         'delete_backup' => 'delete_backup',
         'update_values' => 'update_values',
         'ithemes' => 'ithemes',        
-        'updraftplus' => 'updraftplus'        
+        'updraftplus' => 'updraftplus',
+        'backup_wp' => 'backup_wp'
     );
 
     private $FTP_ERROR = 'Failed, please add FTP details for automatic upgrades.';
@@ -102,7 +103,12 @@ class MainWPChild
         add_action('init', array(&$this, 'parse_init'));
         add_action('admin_menu', array(&$this, 'admin_menu'));
         add_action('admin_init', array(&$this, 'admin_init'));
-        add_action('init', array(&$this, 'localization'));        
+        add_action('init', array(&$this, 'localization'));
+
+        if (is_admin()) {
+            MainWPHelper::update_option('mainwp_child_plugin_version', $this->version, 'yes');
+        }
+
         $this->checkOtherAuth();
 		
         MainWPClone::init();
@@ -111,7 +117,7 @@ class MainWPChild
         $this->run_saved_snippets();
 
         if (!get_option('mainwp_child_pubkey'))
-            MainWPHelper::update_option('mainwp_child_branding_disconnected', 'yes');
+            MainWPHelper::update_option('mainwp_child_branding_disconnected', 'yes', 'yes');
 
         $branding_robust = true;
         $cancelled_branding = (get_option('mainwp_child_branding_disconnected') === 'yes') && !get_option('mainwp_branding_preserve_branding');
@@ -134,14 +140,44 @@ class MainWPChild
 
         if ($update_version === false)
         {
-            $options = array('mainwp_child_legacy', 'mainwp_child_auth', 'mainwp_child_uniqueId', 'mainwp_child_onetime_htaccess', 'mainwp_child_htaccess_set', 'mainwp_child_fix_htaccess', 'mainwp_child_pubkey', 'mainwp_child_server', 'mainwp_child_nonce', 'mainwp_child_nossl', 'mainwp_child_nossl_key', 'mainwp_child_remove_wp_version', 'mainwp_child_remove_rsd', 'mainwp_child_remove_wlw', 'mainwp_child_remove_core_updates', 'mainwp_child_remove_plugin_updates', 'mainwp_child_remove_theme_updates', 'mainwp_child_remove_php_reporting', 'mainwp_child_remove_scripts_version', 'mainwp_child_remove_styles_version', 'mainwp_child_remove_readme', 'heatMapEnabled', 'mainwp_child_clone_sites', 'mainwp_child_pluginDir', 'mainwp_premium_updates', 'mainwp_child_activated_once', 'mainwp_maintenance_opt_alert_404', 'mainwp_maintenance_opt_alert_404_email', 'mainwp_ext_code_snippets', 'mainwp_ext_snippets_enabled', 'mainwp_temp_clone_plugins', 'mainwp_temp_clone_themes', 'mainwp_child_click_data', 'mainwp_child_clone_from_server_last_folder', 'mainwp_child_clone_permalink', 'mainwp_child_restore_permalink', 'mainwp_keyword_links_htaccess_set', 'mainwp_kwl_options', 'mainwp_kwl_keyword_links', 'mainwp_kwl_click_statistic_data', 'mainwp_kwl_statistic_data_', 'mainwp_kwl_enable_statistic', 'mainwpKeywordLinks', 'mainwp_branding_ext_enabled', 'mainwp_branding_plugin_header', 'mainwp_branding_support_email', 'mainwp_branding_support_message', 'mainwp_branding_remove_restore', 'mainwp_branding_remove_setting', 'mainwp_branding_remove_wp_tools', 'mainwp_branding_remove_wp_setting', 'mainwp_branding_remove_permalink', 'mainwp_branding_button_contact_label', 'mainwp_branding_send_email_message', 'mainwp_branding_message_return_sender', 'mainwp_branding_submit_button_title', 'mainwp_branding_disable_wp_branding', 'mainwp_branding_extra_settings', 'mainwp_branding_child_hide', 'mainwp_branding_show_support', 'mainwp_branding_disable_change');
+            $options = array('mainwp_child_legacy', 'mainwp_child_auth', 'mainwp_branding_ext_enabled', 'mainwp_child_uniqueId', 'mainwp_child_onetime_htaccess', 'mainwp_child_htaccess_set', 'mainwp_child_fix_htaccess', 'mainwp_child_pubkey', 'mainwp_child_server', 'mainwp_child_nonce', 'mainwp_child_nossl', 'mainwp_child_nossl_key', 'mainwp_child_remove_wp_version', 'mainwp_child_remove_rsd', 'mainwp_child_remove_wlw', 'mainwp_child_remove_core_updates', 'mainwp_child_remove_plugin_updates', 'mainwp_child_remove_theme_updates', 'mainwp_child_remove_php_reporting', 'mainwp_child_remove_scripts_version', 'mainwp_child_remove_styles_version', 'mainwp_child_remove_readme', 'heatMapEnabled', 'mainwp_child_clone_sites', 'mainwp_child_pluginDir', 'mainwp_premium_updates', 'mainwp_child_activated_once', 'mainwp_maintenance_opt_alert_404', 'mainwp_maintenance_opt_alert_404_email', 'mainwp_ext_code_snippets', 'mainwp_ext_snippets_enabled', 'mainwp_temp_clone_plugins', 'mainwp_temp_clone_themes', 'mainwp_child_click_data', 'mainwp_child_clone_from_server_last_folder', 'mainwp_child_clone_permalink', 'mainwp_child_restore_permalink', 'mainwp_keyword_links_htaccess_set', 'mainwp_kwl_options', 'mainwp_kwl_keyword_links', 'mainwp_kwl_click_statistic_data', 'mainwp_kwl_statistic_data_', 'mainwp_kwl_enable_statistic', 'mainwpKeywordLinks', 'mainwp_branding_ext_enabled', 'mainwp_branding_plugin_header', 'mainwp_branding_support_email', 'mainwp_branding_support_message', 'mainwp_branding_remove_restore', 'mainwp_branding_remove_setting', 'mainwp_branding_remove_wp_tools', 'mainwp_branding_remove_wp_setting', 'mainwp_branding_remove_permalink', 'mainwp_branding_button_contact_label', 'mainwp_branding_send_email_message', 'mainwp_branding_message_return_sender', 'mainwp_branding_submit_button_title', 'mainwp_branding_disable_wp_branding', 'mainwp_branding_extra_settings', 'mainwp_branding_child_hide', 'mainwp_branding_show_support', 'mainwp_branding_disable_change');
             foreach ($options as $option)
             {
                 MainWPHelper::fix_option($option);
             }
         }
+        else if (($update_version === false) || ($update_version == '1.0') || ($update_version == '1.1'))
+        {
+            $options = array('mainwp_child_pubkey', 'mainwp_child_branding_disconnected', 'mainwp_branding_plugin_header', 'mainwp_child_update_version', 'mainwp_child_auth', 'mainwp_child_clone_permalink', 'mainwp_child_restore_permalink', 'mainwp_ext_snippets_enabled', 'mainwp_child_fix_htaccess', 'mainwp_child_pluginDir', 'mainwp_child_htaccess_set', 'heatMapEnabled', 'heatMapsIndividualOverrideSetting', 'heatMapExtensionLoaded', 'heatMapsIndividualDisable', 'mainwp_child_nossl', 'mainwp_updraftplus_ext_enabled', 'mainwpKeywordLinks', 'mainwp_keyword_links_htaccess_set', 'mainwp_branding_button_contact_label', 'mainwp_branding_extra_settings', 'mainwp_branding_ext_enabled', 'mainwp_creport_ext_branding_enabled', 'mainwp_pagespeed_ext_enabled', 'mainwp_linkschecker_ext_enabled', 'mainwp_wordfence_ext_enabled', 'mainwp_ithemes_ext_enabled', 'mainwp_maintenance_opt_alert_404');
+            foreach ($options as $option)
+            {
+                MainWPHelper::fix_option($option, 'yes');
+            }
 
-        MainWPHelper::update_option('mainwp_child_update_version', $this->update_version);
+            if (!is_array(get_option('mainwp_security')))
+            {
+                $securityOptions = array('wp_version' => 'mainwp_child_remove_wp_version',
+                    'rsd' => 'mainwp_child_remove_rsd',
+                    'wlw' => 'mainwp_child_remove_wlw',
+                    'core_updates' => 'mainwp_child_remove_core_updates',
+                    'plugin_updates' => 'mainwp_child_remove_plugin_updates',
+                    'theme_updates' => 'mainwp_child_remove_theme_updates',
+                    'php_reporting' => 'mainwp_child_remove_php_reporting',
+                    'scripts_version' => 'mainwp_child_remove_scripts_version',
+                    'styles_version' => 'mainwp_child_remove_styles_version',
+                    'readme' => 'mainwp_child_remove_readme');
+
+                $security = array();
+                foreach ($securityOptions as $option => $old)
+                {
+                    $value = get_option($old);
+                    $security[$option] = ($value == 'T');
+                }
+                MainWPHelper::update_option('mainwp_security', $security, 'yes');
+            }
+        }
+
+        MainWPHelper::update_option('mainwp_child_update_version', $this->update_version, 'yes');
     }
 
     public function admin_notice()
@@ -190,7 +226,7 @@ class MainWPChild
             while (isset($auths[$newI])) unset($auths[$newI++]);
             $auths[$this->maxHistory] = md5(MainWPHelper::randString(14));
             $auths['last'] = time();
-            MainWPHelper::update_option('mainwp_child_auth', $auths);
+            MainWPHelper::update_option('mainwp_child_auth', $auths, 'yes');
         }
     }
 
@@ -441,7 +477,7 @@ class MainWPChild
                     MainWPHelper::update_option('mainwp_child_onetime_htaccess', true);
                 }
             }
-            MainWPHelper::update_option('mainwp_child_htaccess_set', 'yes');
+            MainWPHelper::update_option('mainwp_child_htaccess_set', 'yes', 'yes');
         }
         else if ($hard)
         {
@@ -594,7 +630,7 @@ class MainWPChild
             include_once(ABSPATH . '/wp-admin/includes/misc.php');
 
             $wp_rewrite->flush_rules();
-            MainWPHelper::update_option('mainwp_child_fix_htaccess', 'yes');
+            MainWPHelper::update_option('mainwp_child_fix_htaccess', 'yes', 'yes');
         }
 
         $this->update_htaccess();
@@ -682,12 +718,17 @@ class MainWPChild
                 $open_location = base64_decode ($open_location);
                 $_vars = MainWPHelper::parse_query($open_location);
                 $_path = parse_url($open_location, PHP_URL_PATH);
-
                 if (isset($_vars['_mwpNoneName']) && isset($_vars['_mwpNoneValue'])) {
                     $_vars[$_vars['_mwpNoneName']] = wp_create_nonce($_vars['_mwpNoneValue']);
                     unset($_vars['_mwpNoneName']);
                     unset($_vars['_mwpNoneValue']);
-                    $open_location = "/wp-admin/" . $_path . "?" . http_build_query($_vars);
+                    $open_url = "";
+                    foreach ($_vars as $key => $value)
+                    {
+                        $open_url .= $key . '=' . $value . '&';
+                    }
+                    $open_url = rtrim($open_url, '&');
+                    $open_location = "/wp-admin/" . $_path . "?" . $open_url;
                 } else {
                     if (strpos($open_location, "nonce=child_temp_nonce") !== false)
                         $open_location = str_replace ("nonce=child_temp_nonce", "nonce=" . wp_create_nonce('wp-ajax'), $open_location);
@@ -745,7 +786,7 @@ class MainWPChild
 
         if (!$auth && isset($_POST['mainwpsignature']))
         {
-            MainWPHelper::error(__('Authentication failed. Reinstall MainWP plugin please','mainwp-child'));
+            MainWPHelper::error(__('Authentication failed! Please deactivate and re-activate the MainWP Child plugin on this site.','mainwp-child'));
         }
 
         //Check if the user exists & is an administrator
@@ -790,7 +831,8 @@ class MainWPChild
         new MainWPChildIThemesSecurity();
 
         MainWPChildUpdraftplusBackups::Instance()->updraftplus_init();                    
-      
+        MainWPChildBackUpWordPress::Instance()->init();
+
         //Call the function required
         if (isset($_POST['function']) && isset($this->callableFunctions[$_POST['function']]))
         {
@@ -1359,7 +1401,7 @@ class MainWPChild
             MainWPHelper::error(__('Invalid request','mainwp-child'));
         }
 
-        MainWPHelper::update_option('mainwp_child_branding_disconnected', 'yes');
+        MainWPHelper::update_option('mainwp_child_branding_disconnected', 'yes', 'yes');
 
         //Already added - can't readd. Deactivate plugin..
         if (get_option('mainwp_child_pubkey'))
@@ -1392,16 +1434,16 @@ class MainWPChild
             }
         }
 
-        MainWPHelper::update_option('mainwp_child_pubkey', base64_encode($_POST['pubkey'])); //Save the public key
+        MainWPHelper::update_option('mainwp_child_pubkey', base64_encode($_POST['pubkey']), 'yes'); //Save the public key
         MainWPHelper::update_option('mainwp_child_server', $_POST['server']); //Save the public key
         MainWPHelper::update_option('mainwp_child_nonce', 0); //Save the nonce
 
-        MainWPHelper::update_option('mainwp_child_nossl', ($_POST['pubkey'] == '-1' || !function_exists('openssl_verify') ? 1 : 0));
+        MainWPHelper::update_option('mainwp_child_nossl', ($_POST['pubkey'] == '-1' || !function_exists('openssl_verify') ? 1 : 0), 'yes');
         $information['nossl'] = ($_POST['pubkey'] == '-1' || !function_exists('openssl_verify') ? 1 : 0);
         $nossl_key = uniqid('', true);
-        MainWPHelper::update_option('mainwp_child_nossl_key', $nossl_key);
+        MainWPHelper::update_option('mainwp_child_nossl_key', $nossl_key, 'yes');
         $information['nosslkey'] = $nossl_key;
-        MainWPHelper::update_option('mainwp_child_branding_disconnected', '');
+        MainWPHelper::update_option('mainwp_child_branding_disconnected', '', 'yes');
 
         $information['register'] = 'OK';        
         $information['uniqueId'] = get_option('mainwp_child_uniqueId', '');
@@ -2066,6 +2108,9 @@ class MainWPChild
         }
 
         $information = array();
+        $security = get_option('mainwp_security');
+        if (!is_array($security)) $security = array();
+
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'listing')
         {
             MainWPSecurity::prevent_listing();
@@ -2074,43 +2119,43 @@ class MainWPChild
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'wp_version')
         {
-            MainWPHelper::update_option('mainwp_child_remove_wp_version', 'T');
-            MainWPSecurity::remove_wp_version();
+            $security['wp_version'] = true;
+            MainWPSecurity::remove_wp_version(true);
             $information['wp_version'] = (!MainWPSecurity::remove_wp_version_ok() ? 'N' : 'Y');
         }
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'rsd')
         {
-            MainWPHelper::update_option('mainwp_child_remove_rsd', 'T');
-            MainWPSecurity::remove_rsd();
+            $security['rsd'] = true;
+            MainWPSecurity::remove_rsd(true);
             $information['rsd'] = (!MainWPSecurity::remove_rsd_ok() ? 'N' : 'Y');
         }
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'wlw')
         {
-            MainWPHelper::update_option('mainwp_child_remove_wlw', 'T');
-            MainWPSecurity::remove_wlw();
+            $security['wlw'] = true;
+            MainWPSecurity::remove_wlw(true);
             $information['wlw'] = (!MainWPSecurity::remove_wlw_ok() ? 'N' : 'Y');
         }
 
 //        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'core_updates')
 //        {
-//            update_option('mainwp_child_remove_core_updates', 'T');
-//            MainWPSecurity::remove_core_update();
+//            $security['core_updates'] = true;
+//            MainWPSecurity::remove_core_update(true);
 //            $information['core_updates'] = (!MainWPSecurity::remove_core_update_ok() ? 'N' : 'Y');
 //        }
 
 //        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'plugin_updates')
 //        {
-//            update_option('mainwp_child_remove_plugin_updates', 'T');
-//            MainWPSecurity::remove_plugin_update();
+//            $security['plugin_updates'] = true;
+//            MainWPSecurity::remove_plugin_update(true);
 //            $information['plugin_updates'] = (!MainWPSecurity::remove_plugin_update_ok() ? 'N' : 'Y');
 //        }
 
 //        if ($_POST['feature'] == 'all' || $_POST['feature'] == 'theme_updates')
 //        {
-//            update_option('mainwp_child_remove_theme_updates', 'T');
-//            MainWPSecurity::remove_theme_update();
+//            $security['theme_updates'] = true;
+//            MainWPSecurity::remove_theme_update(true);
 //            $information['theme_updates'] = (!MainWPSecurity::remove_theme_update_ok() ? 'N' : 'Y');
 //        }
 
@@ -2132,17 +2177,17 @@ class MainWPChild
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'php_reporting')
         {
-            MainWPHelper::update_option('mainwp_child_remove_php_reporting', 'T');
-            MainWPSecurity::remove_php_reporting();
+            $security['php_reporting'] = true;
+            MainWPSecurity::remove_php_reporting(true);
             $information['php_reporting'] = (!MainWPSecurity::remove_php_reporting_ok() ? 'N' : 'Y');
         }
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'versions')
         {
-            MainWPHelper::update_option('mainwp_child_remove_scripts_version', 'T');
-            MainWPHelper::update_option('mainwp_child_remove_styles_version', 'T');
-            MainWPSecurity::remove_scripts_version();
-            MainWPSecurity::remove_styles_version();
+            $security['scripts_version'] = true;
+            $security['styles_version'] = true;
+            MainWPSecurity::remove_scripts_version(true);
+            MainWPSecurity::remove_styles_version(true);
             $information['versions'] = (!MainWPSecurity::remove_scripts_version_ok() || !MainWPSecurity::remove_styles_version_ok()
                     ? 'N' : 'Y');
         }
@@ -2154,10 +2199,12 @@ class MainWPChild
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'readme')
         {
-            MainWPHelper::update_option('mainwp_child_remove_readme', 'T');
-            MainWPSecurity::remove_readme();
+            $security['readme'] = true;
+            MainWPSecurity::remove_readme(true);
             $information['readme'] = (MainWPSecurity::remove_readme_ok() ? 'Y' : 'N');
         }
+
+        MainWPHelper::update_option('mainwp_security', $security, 'yes');
 
         if ($sync)
         {
@@ -2176,42 +2223,46 @@ class MainWPChild
             $sync = true;
         }
 
+        $security = get_option('mainwp_security');
+
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'wp_version')
         {
-            MainWPHelper::update_option('mainwp_child_remove_wp_version', 'F');
+            $security['wp_version'] = false;
             $information['wp_version'] = 'N';
         }
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'rsd')
         {
-            MainWPHelper::update_option('mainwp_child_remove_rsd', 'F');
+            $security['rsd'] = false;
             $information['rsd'] = 'N';
         }
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'wlw')
         {
-            MainWPHelper::update_option('mainwp_child_remove_wlw', 'F');
+            $security['wlw'] = false;
             $information['wlw'] = 'N';
         }
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'php_reporting')
         {
-            MainWPHelper::update_option('mainwp_child_remove_php_reporting', 'F');
+            $security['php_reporting'] = false;
             $information['php_reporting'] = 'N';
         }
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'versions')
         {
-            MainWPHelper::update_option('mainwp_child_remove_scripts_version', 'F');
-            MainWPHelper::update_option('mainwp_child_remove_styles_version', 'F');
+            $security['scripts_version'] = false;
+            $security['styles_version'] = false;
             $information['versions'] = 'N';
         }
 
         if ($_POST['feature'] == 'all' || $_POST['feature'] == 'readme')
         {
-            MainWPHelper::update_option('mainwp_child_remove_readme', 'F');
+            $security['readme'] = false;
             $information['readme'] = MainWPSecurity::remove_readme_ok();
         }
+
+        MainWPHelper::update_option('mainwp_security', $security, 'yes');
 
         if ($sync)
         {
@@ -2257,13 +2308,13 @@ class MainWPChild
             if ($_POST['heatMap'] == '1')
             {
                 if (get_option('heatMapEnabled') != '1') $update_htaccess = true;
-                MainWPHelper::update_option('heatMapEnabled', '1');
-                MainWPHelper::update_option('heatMapExtensionLoaded', 'yes');
+                MainWPHelper::update_option('heatMapEnabled', '1', 'yes');
+                MainWPHelper::update_option('heatMapExtensionLoaded', 'yes', 'yes');
             }
             else
             {
                 if (get_option('heatMapEnabled') != '0') $update_htaccess = true;
-                MainWPHelper::update_option('heatMapEnabled', '0');
+                MainWPHelper::update_option('heatMapEnabled', '0', 'yes');
             }
         }
 
@@ -2284,13 +2335,13 @@ class MainWPChild
         {
             if (get_option('mainwp_child_pluginDir') != $_POST['pluginDir'])
             {
-                MainWPHelper::update_option('mainwp_child_pluginDir', $_POST['pluginDir']);
+                MainWPHelper::update_option('mainwp_child_pluginDir', $_POST['pluginDir'], 'yes');
                 $update_htaccess = true;
             }
         }
         else if (get_option('mainwp_child_pluginDir') != false)
         {
-            delete_option('mainwp_child_pluginDir');
+            MainWPHelper::update_option('mainwp_child_pluginDir', false, 'yes');
             $update_htaccess = true;
         }
 
@@ -2307,7 +2358,7 @@ class MainWPChild
 
         if ($exit) $this->updateExternalSettings();
 
-        MainWPHelper::update_option('mainwp_child_branding_disconnected', '');
+        MainWPHelper::update_option('mainwp_child_branding_disconnected', '', 'yes');
 
         $information['version'] = $this->version;
         $information['wpversion'] = $wp_version;
@@ -2457,7 +2508,7 @@ class MainWPChild
 
         //Directory listings!
         $information['directories'] = $this->scanDir(ABSPATH, 3);
-        $cats = get_categories(array('hide_empty' => 0, 'name' => 'select_name', 'hierarchical' => true));
+        $cats = get_categories(array('hide_empty' => 0, 'hierarchical' => true));
         $categories = array();
         foreach ($cats as $cat)
         {
@@ -2533,6 +2584,12 @@ class MainWPChild
             if (isset($othersData['syncUpdraftData']) && $othersData['syncUpdraftData']) {
                 if (MainWPChildUpdraftplusBackups::isActivatedUpdraftplus()) {
                     $information['syncUpdraftData'] =   MainWPChildUpdraftplusBackups::Instance()->syncData();
+                }
+            }
+
+            if (isset($othersData['syncBackUpWordPress']) && $othersData['syncBackUpWordPress']) {
+                if (MainWPChildBackUpWordPress::isActivated()) {
+                    $information['syncBackUpWordPress'] =   MainWPChildBackUpWordPress::Instance()->syncData();
                 }
             }
         }
@@ -3511,7 +3568,7 @@ class MainWPChild
 
     function deactivation()
     {
-        $to_delete = array('mainwp_child_pubkey', 'mainwp_child_nonce', 'mainwp_child_nossl', 'mainwp_child_nossl_key', 'mainwp_child_remove_styles_version', 'mainwp_child_remove_scripts_version', 'mainwp_child_remove_php_reporting', 'mainwp_child_remove_theme_updates', 'mainwp_child_remove_plugin_updates', 'mainwp_child_remove_core_updates', 'mainwp_child_remove_wlw', 'mainwp_child_remove_rsd', 'mainwp_child_remove_wp_version', 'mainwp_child_server');
+        $to_delete = array('mainwp_child_pubkey', 'mainwp_child_nonce', 'mainwp_child_nossl', 'mainwp_child_nossl_key', 'mainwp_security', 'mainwp_child_server');
         $to_delete[] = 'mainwp_ext_snippets_enabled';
         $to_delete[] = 'mainwp_ext_code_snippets';        
         
@@ -3686,14 +3743,14 @@ class MainWPChild
 
                 if (isset($_POST['enable_alert']) && $_POST['enable_alert'] == 1)
                 {
-                    MainWPHelper::update_option('mainwp_maintenance_opt_alert_404', 1);
+                    MainWPHelper::update_option('mainwp_maintenance_opt_alert_404', 1, 'yes');
                 } else {
                     delete_option('mainwp_maintenance_opt_alert_404');
                 }
 
                 if (isset($_POST['email']) && !empty($_POST['email']))
                 {
-                    MainWPHelper::update_option('mainwp_maintenance_opt_alert_404_email', $_POST['email']);
+                    MainWPHelper::update_option('mainwp_maintenance_opt_alert_404_email', $_POST['email'], 'yes');
                 } else {
                     delete_option('mainwp_maintenance_opt_alert_404_email');
                 }
@@ -3922,7 +3979,7 @@ class MainWPChild
                     $information['status'] = 'SUCCESS';  
                 }
             }
-            MainWPHelper::update_option('mainwp_ext_snippets_enabled', true);
+            MainWPHelper::update_option('mainwp_ext_snippets_enabled', true, 'yes');
         } else if ($action === 'delete_snippet') {
             $type = $_POST['type'];
             $slug = $_POST['slug'];
@@ -4060,8 +4117,8 @@ class MainWPChild
                 $need_update = false;  
             } 
             if ($need_update) { 
-                MainWPHelper::update_option('heatMapsIndividualOverrideSetting', $override);             
-                MainWPHelper::update_option('heatMapsIndividualDisable', $disable);            
+                MainWPHelper::update_option('heatMapsIndividualOverrideSetting', $override, 'yes');
+                MainWPHelper::update_option('heatMapsIndividualDisable', $disable, 'yes');
                 $this->update_htaccess(true);
             }
             MainWPHelper::write(array('result' => 'success'));
@@ -4084,6 +4141,10 @@ class MainWPChild
 
     function updraftplus() {
         MainWPChildUpdraftplusBackups::Instance()->action();
+    }
+
+    function backup_wp() {
+        MainWPChildBackUpWordPress::Instance()->action();
     }
 
     function delete_backup()

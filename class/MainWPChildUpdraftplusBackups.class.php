@@ -91,7 +91,7 @@ class MainWPChildUpdraftplusBackups
     }
     
     function set_showhide() {
-        MainWPHelper::update_option('mainwp_updraftplus_ext_enabled', "Y");        
+        MainWPHelper::update_option('mainwp_updraftplus_ext_enabled', "Y", 'yes');
         $hide = isset($_POST['showhide']) && ($_POST['showhide'] === "hide") ? 'hide' : "";
         MainWPHelper::update_option('mainwp_updraftplus_hide_plugin', $hide);        
         $information['result'] = 'SUCCESS';
@@ -174,7 +174,7 @@ class MainWPChildUpdraftplusBackups
         
     function save_settings() {        
 
-        MainWPHelper::update_option('mainwp_updraftplus_ext_enabled', "Y");   
+        MainWPHelper::update_option('mainwp_updraftplus_ext_enabled', "Y", 'yes');
         $settings = unserialize(base64_decode($_POST['settings']));           
         
         $keys = $this->get_settings_keys();
@@ -184,13 +184,25 @@ class MainWPChildUpdraftplusBackups
             if (class_exists('UpdraftPlus_Options')) {
                 foreach($keys as $key) {
                     if (isset($settings[$key])) {
-//                        if ($key == "updraft_service") {                              
-//                            UpdraftPlus_Options::update_updraft_option($key, $settings[$key]);    
-//                        } else if ($key == "updraft_s3") {                            
-//                            UpdraftPlus_Options::update_updraft_option($key, $settings[$key]);    
-//                        } else {
+                        if ($key == "updraft_dropbox") {
+                            if (isset($settings[$key])) {
+                                $opts = UpdraftPlus_Options::get_updraft_option('updraft_dropbox');
+                                $opts['appkey'] = $settings[$key]['appkey'];
+                                $opts['secret'] = $settings[$key]['secret'];
+                                $opts['folder'] = $settings[$key]['folder'];
+                                UpdraftPlus_Options::update_updraft_option($key, $opts);
+                            }
+                        } else if ($key == "updraft_googledrive") {
+                             if (isset($settings[$key])) {
+                                $opts = UpdraftPlus_Options::get_updraft_option('updraft_googledrive');
+                                $opts['clientid'] = $settings[$key]['clientid'];
+                                $opts['secret'] = $settings[$key]['secret'];
+                                $opts['folder'] = $settings[$key]['folder'];
+                                UpdraftPlus_Options::update_updraft_option($key, $opts);
+                             }
+                        } else {
                             UpdraftPlus_Options::update_updraft_option($key, $settings[$key]);                        
-//                        }
+                        }
                         $updated = true;
                     }
                 }

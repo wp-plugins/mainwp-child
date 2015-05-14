@@ -4,7 +4,8 @@ class MainWPHelper
 
     static function write($val)
     {
-        die('<mainwp>' . base64_encode(serialize($val)) . '</mainwp>');
+        $output = serialize($val);
+        die('<mainwp>' . base64_encode($output) . '</mainwp>');
     }
 
     static function error($error)
@@ -372,7 +373,8 @@ class MainWPHelper
         if ($is_post_plus) {
             $random_privelege = isset($post_custom['_saved_draft_random_privelege']) ? $post_custom['_saved_draft_random_privelege'] : null;            
             $random_privelege = is_array($random_privelege) ? current($random_privelege) : null;
-            $random_privelege = unserialize(base64_decode($random_privelege));
+            $random_privelege_base = base64_decode($random_privelege);
+            $random_privelege = unserialize($random_privelege_base);
             
             if (is_array($random_privelege) && count($random_privelege) > 0) {
                 $random_post_authors = array();
@@ -667,7 +669,8 @@ class MainWPHelper
         }
         else if (preg_match('/<mainwp>(.*)<\/mainwp>/', $data, $results) > 0) {
             $result = $results[1];
-            $information = unserialize(base64_decode($result));
+            $result_base = base64_decode($result);
+            $information = unserialize($result_base);
             return $information;
         }
         else if ($data == '')
@@ -828,9 +831,9 @@ class MainWPHelper
 <br>';
     }
     
-    static function update_option($option_name, $option_value)
+    static function update_option($option_name, $option_value, $autoload = 'no')
     {
-        $success = add_option($option_name, $option_value, '', 'no');
+        $success = add_option($option_name, $option_value, '', $autoload);
 
          if (!$success)
          {
@@ -840,15 +843,15 @@ class MainWPHelper
          return $success;
     }
 
-    static function fix_option($option_name)
+    static function fix_option($option_name, $autoload = 'no')
     {
         global $wpdb;
 
-        if ( 'yes' == $wpdb->get_var( "SELECT autoload FROM $wpdb->options WHERE option_name = '" . $option_name . "'" ) )
+        if ( $autoload != $wpdb->get_var( "SELECT autoload FROM $wpdb->options WHERE option_name = '" . $option_name . "'" ) )
         {
             $option_value = get_option( $option_name );
             delete_option( $option_name );
-            add_option( $option_name, $option_value, null, 'no' );
+            add_option( $option_name, $option_value, null, $autoload );
         }
     }
 

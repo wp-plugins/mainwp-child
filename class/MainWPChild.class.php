@@ -11,7 +11,7 @@ include_once(ABSPATH . '/wp-admin/includes/plugin.php');
 
 class MainWPChild
 {
-    private $version = '2.0.18';
+    private $version = '2.0.19';
     private $update_version = '1.2';
 
     private $callableFunctions = array(
@@ -356,6 +356,12 @@ class MainWPChild
                     MainWPClone::init_restore_menu($this->branding, $mainwp_child_menu_slug);
                 }
             }
+            $subpageargs = array(
+                'child_slug' => $mainwp_child_menu_slug,
+                'branding' => $this->branding
+            );
+            do_action('mainwp-child-subpages', $subpageargs);
+
         }
     }
 
@@ -1138,6 +1144,8 @@ class MainWPChild
         //Prevent disable/re-enable at upgrade
         define('DOING_CRON', true);
 
+        MainWPHelper::getWPFilesystem();
+
         include_once(ABSPATH . '/wp-admin/includes/class-wp-upgrader.php');
 //        if (file_exists(ABSPATH . '/wp-admin/includes/deprecated.php')) include_once(ABSPATH . '/wp-admin/includes/deprecated.php');
         if (file_exists(ABSPATH . '/wp-admin/includes/screen.php')) include_once(ABSPATH . '/wp-admin/includes/screen.php');
@@ -1466,7 +1474,9 @@ class MainWPChild
         $post_tags = rawurldecode(isset($new_post['post_tags']) ? $new_post['post_tags'] : null);
         $post_featured_image = base64_decode ($_POST['post_featured_image']);
         $upload_dir = unserialize(base64_decode ($_POST['mainwp_upload_dir']));
-        $new_post['_ezin_post_category'] = unserialize(base64_decode ($_POST['_ezin_post_category']));
+
+        if (isset($_POST['_ezin_post_category']))
+            $new_post['_ezin_post_category'] = unserialize(base64_decode ($_POST['_ezin_post_category']));
 
         $res = MainWPHelper::createPost($new_post, $post_custom, $post_category, $post_featured_image, $upload_dir, $post_tags);
         $created = $res['success'];
@@ -2372,6 +2382,10 @@ class MainWPChild
 
         include_once(ABSPATH . '/wp-admin/includes/update.php');
 
+        $timeout = 3 * 60 * 60; // 3minutes
+        @set_time_limit($timeout);
+        @ini_set('max_execution_time', $timeout);
+
         //Check for new versions
         if ($this->filterFunction != null) add_filter( 'pre_site_transient_update_core', $this->filterFunction, 99 );
         if ($this->filterFunction != null) add_filter( 'pre_transient_update_core', $this->filterFunction, 99 );
@@ -2643,7 +2657,7 @@ class MainWPChild
             if (basename($pDir) == 'logs') return empty($output) ? null : $output;
             if ($pLvl == 0) return empty($output) ? null : $output;
 
-            if ($files = @scandir($pDir))
+            if ($files = $this->intScanDir($pDir))
             {
                 foreach ($files as $file)
                 {
@@ -2661,6 +2675,25 @@ class MainWPChild
         }
         return empty($output) ? null : $output;
     }
+
+    function intScanDir($dir)
+   	{
+   		if (@is_dir($dir) && ($dh = @opendir($dir)))
+   		{
+   			$cnt = 0;
+   			$out = array();
+   			while (($file = @readdir($dh)) !== false) {
+   				$newDir = $dir . $file . DIRECTORY_SEPARATOR;
+   				if (!@is_dir($newDir)) continue;
+
+   				$out[] = $file;
+   				if ($cnt++ > 10) return $out;
+   			}
+   			@closedir($dh);
+   			return $out;
+   		}
+   		return false;
+   	}
 
     function upgrade_get_theme_updates()
     {

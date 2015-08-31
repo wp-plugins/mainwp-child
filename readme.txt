@@ -7,7 +7,7 @@ Author URI: https://mainwp.com
 Plugin URI: https://mainwp.com
 Requires at least: 3.6
 Tested up to: 4.3
-Stable tag: 2.0.24
+Stable tag: 2.0.25
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,17 +46,17 @@ To see full documentation and FAQs please visit [MainWP Documentation](http://do
 == Screenshots ==
 
 1. The Dashboard Screen
-2. The Posts Screen
-3. The Comments Screen
-4. The Sites Screen
+2. The Sites Screen
+3. The Posts Screen
+4. The Extensions Screen
 5. The Plugins Screen
-6. The Themes Screen
-7. The Groups Screen
-8. The Offline Checks Screen
-9. The Clone Screen
-10. The Extension Screen
+6. The Groups Screen
 
 == Changelog ==
+
+= 2.0.25 - 8-31-15 =
+* Fixed: Issue with Client Reports extension where comments records were not displayed correctly
+* Added: Support for missing Client Report records
 
 = 2.0.24 - 8-20-15 =
 * Fixed: Incorrect last update value for abandoned plugins & themes feature
